@@ -1,5 +1,7 @@
 # TS Stack And Style Skills
 
+[English](README.md) | 中文
+
 这是一个面向 Codex 优先使用场景的开源 skill 仓库，聚焦于 TypeScript 技术选型与 TypeScript 编码风格约束。
 
 本仓库一共提供 4 个完整 skill：

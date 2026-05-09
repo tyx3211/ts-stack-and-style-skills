@@ -1,5 +1,7 @@
 # TS Stack And Style Skills
 
+English | [中文](README.zh-CN.md)
+
 Codex-first open-source skill pack for TypeScript stack selection and TypeScript coding style decisions.
 
 This repository packages four complete skills:
