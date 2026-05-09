@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript Coding Preferences"
+  short_description: "TypeScript style, lint and hook expectations, type safety, modeling boundaries, and lighter architecture defaults"
+  default_prompt: "Use $typescript-coding-preferences to implement or review TypeScript code with the preferred style."

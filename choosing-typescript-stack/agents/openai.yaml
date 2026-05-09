@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript Stack Selection"
+  short_description: "Choose TypeScript frontend, backend, contract, database, and runtime stacks by project shape"
+  default_prompt: "Use $choosing-typescript-stack to choose a TypeScript stack for a project scenario."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript 编码偏好（中文）"
+  short_description: "TS 代码风格、lint/hook、类型安全、建模边界与轻量架构偏好"
+  default_prompt: "Use $typescript-coding-preferences-zh to implement or review TypeScript code with the preferred style in Chinese."

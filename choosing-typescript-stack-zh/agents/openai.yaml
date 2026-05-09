@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript 技术选型（中文）"
+  short_description: "按项目场景选择 TypeScript 前后端、契约、数据库和运行时技术栈"
+  default_prompt: "Use $choosing-typescript-stack-zh to choose a TypeScript stack for a project scenario in Chinese."
