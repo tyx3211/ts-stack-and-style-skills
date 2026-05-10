@@ -60,6 +60,7 @@ description: Use when defining, tightening, reviewing, or enforcing TypeScript s
     "lib": ["ES2022"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
     "types": ["node"],
 
     "strict": true,
@@ -97,6 +98,7 @@ description: Use when defining, tightening, reviewing, or enforcing TypeScript s
 
 - 即使 TypeScript 版本默认开启 `strict`，也显式写出 `strict` 和 `noImplicitAny`，因为这属于项目政策。
 - `strictFunctionTypes` 已包含在 `strict` 中，但仍显式写出，因为双变安全是本规范的一部分。
+- 在 NodeNext module model（NodeNext 模块模型）下，把 `esModuleInterop: true` 作为 CommonJS interop（CommonJS 互操作）的默认心智模型；任何例外都必须显式记录。
 - library（库）、shared package（共享包）、基础设施 package 和边界敏感代码，优先 `skipLibCheck: false`。大型 app 可以把 `skipLibCheck: true` 作为有记录的性能折中；它会信任声明文件边界类型，并跳过许多 `.d.ts` 内部错误。
 - 如果当前 TypeScript 支持 `erasableSyntaxOnly`，且项目想贴近 Node 原生 TypeScript 兼容路线，可以考虑开启；但这会影响 enum、namespace、parameter property（参数属性）等写法，必须作为明确迁移任务处理。
 

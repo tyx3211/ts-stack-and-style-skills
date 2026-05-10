@@ -60,6 +60,7 @@ Use this as the strict baseline for new NodeNext server-side packages unless the
     "lib": ["ES2022"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "esModuleInterop": true,
     "types": ["node"],
 
     "strict": true,
@@ -97,6 +98,7 @@ Notes:
 
 - Keep `strict` and `noImplicitAny` explicit even when a TypeScript version defaults them on.
 - `strictFunctionTypes` is included by `strict`, but keep it explicit because variance safety is part of the policy.
+- In the NodeNext module model, treat `esModuleInterop: true` as the default mental model for CommonJS interop and document any exception explicitly.
 - Prefer `skipLibCheck: false` for libraries, shared packages, infrastructure packages, and boundary-sensitive code. Large apps may use `skipLibCheck: true` only as a documented performance compromise; it trusts declaration-file boundary types and skips many internal `.d.ts` errors.
 - If `erasableSyntaxOnly` is available and the project wants Node-native TypeScript compatibility, consider enabling it, but treat the migration as explicit because enums, namespaces, and parameter properties are affected.
 
