@@ -7,20 +7,20 @@ description: Use when writing, refactoring, or reviewing TypeScript code where s
 
 ## Overview
 
-Follow a TypeScript style that is schema-first at boundaries, function/module-first in flow, data-first in modeling, and deliberately light on object-oriented programming. Use classes as a scoped tool for entities/value objects, not as the architecture default.
+Follow a TypeScript style that is schema-first at boundaries, function/module-first in flow, data-first in modeling, and deliberately light on object-oriented programming. Treat this as the default project discipline, not a soft aesthetic preference. Use classes as a scoped tool for entities/value objects, not as the architecture default.
 
 ## Default Stance
 
-- Prefer explicit data flow, plain functions, and small modules.
-- Prefer composition and delegation over inheritance for code reuse; only use inheritance when the domain has a real, stable `is-a` relationship.
+- Default to explicit data flow, plain functions, and small modules.
+- Use composition and delegation over inheritance for code reuse; use inheritance only when the domain has a real, stable `is-a` relationship and the repository already benefits from that shape.
 - Treat classic OOP patterns as problem-shape vocabulary, not as implementation templates.
 - Avoid Java/Spring-style TypeScript: controller classes, thick service/repository/manager layers, decorator-heavy dependency injection, and empty forwarding abstractions.
-- Use framework conventions already present in the repository when they conflict with this skill, but avoid introducing heavier patterns without a local reason.
+- Follow framework conventions already present in the repository when they conflict with this skill, but do not introduce heavier patterns without a local reason.
 
 ## Runtime And TSConfig Defaults
 
-- For new server-side TypeScript projects, prefer Node.js 24 or a current stable Bun release, depending on the deployment/runtime target.
-- Prefer ESM-oriented TypeScript settings with `module: "NodeNext"` and `moduleResolution: "NodeNext"` when the project is not intentionally CommonJS-only.
+- For new server-side TypeScript projects, use Node.js 24 or a current stable Bun release, depending on the deployment/runtime target.
+- Use ESM-oriented TypeScript settings with `module: "NodeNext"` and `moduleResolution: "NodeNext"` when the project is not intentionally CommonJS-only.
 - Set `esModuleInterop: true` by default for smoother CommonJS/ESM package interop.
 - Respect an existing repository's runtime and module system unless the task is explicitly to modernize or rebaseline it.
 
@@ -28,7 +28,7 @@ Load [references/runtime-tsconfig.md](references/runtime-tsconfig.md) when creat
 
 ## Modeling Decisions
 
-Use this order before adding a new type or abstraction:
+Use this order before adding a new type or abstraction. Do not add a class, service layer, factory, manager, or interface until this check has been applied:
 
 1. For API input/output, DTOs, configs, database rows, and temporary data, use plain object data plus `type` or `interface`.
 2. For domain entities and value objects with stable local behavior, use `class + interface` when `obj.method()` readability or prototype method sharing matters.
@@ -44,6 +44,7 @@ Load [references/object-modeling.md](references/object-modeling.md) when choosin
 - Use `type` for closed unions, mapped/conditional types, and data shapes that should not be reopened.
 - Keep data interfaces separate from capability interfaces. A `UserData` instance should not have to satisfy `UserService`.
 - Use `satisfies` when a literal should be checked against an interface while preserving its precise inferred type.
+- For callback-like capability shapes, use function properties instead of method signatures unless a framework requires method syntax.
 - Do not use `class extends` for reuse unless the domain really has a stable `is-a` relationship or a framework/library requires it.
 
 ## Class Rules
@@ -59,9 +60,11 @@ Keep class methods thin and intrinsic. Put persistence, orchestration, authoriza
 
 Do not pass prototype methods as callbacks unbound. Call through the object (`obj.method()`), wrap explicitly (`(...args) => obj.method(...args)`), or use an external function.
 
+Do not introduce class-based controllers, decorators, DI containers, or framework-like base classes into a lightweight Hono/oRPC/Elysia codebase unless the repository already owns that convention.
+
 ## Functions And Closures
 
-- Prefer plain helper functions for reusable logic.
+- Use plain helper functions for reusable logic.
 - Local callbacks and local helper closures are fine when they do not escape far from their scope.
 - Use factory closures sparingly for dependency assembly, for example `makeUserHandlers(deps)`.
 - Avoid deeply curried APIs, long-lived escaped closures, and framework-like closure DSLs that hide state and control flow.
@@ -73,6 +76,7 @@ Do not pass prototype methods as callbacks unbound. Call through the object (`ob
 - In oRPC-first projects, keep contract schemas in the contract package and do not duplicate the same endpoint schema in Hono validators or Elysia route options.
 - Keep HTTP/RPC handlers thin: parse context, call usecase/service, map response/error.
 - Do not let `Hono.Context`, `Elysia.Context`, React component props, or Vue component state leak into service/usecase/repo code.
+- Do not handwrite public API response types separately from schema/contract output.
 
 Load [references/service-boundaries.md](references/service-boundaries.md) when editing Hono/oRPC/Elysia route, service, repo, policy, schema, or closure-based assembly code.
 

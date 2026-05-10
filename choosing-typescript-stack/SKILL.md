@@ -7,38 +7,40 @@ description: Use when choosing or comparing TypeScript project stacks, front-end
 
 ## Overview
 
-Choose TypeScript stacks by keeping API contracts and runtime schemas explicit, keeping business logic independent from framework context, and selecting frameworks that match project risk, team background, runtime constraints, and AI-assisted maintenance.
+Choose TypeScript stacks by enforcing explicit API contracts and runtime schemas, keeping business logic independent from framework context, and selecting frameworks that match project risk, team background, runtime constraints, and AI-assisted maintenance. Treat stack choices as architecture decisions; defaults apply unless a concrete project constraint justifies an exception.
 
 ## Selection Workflow
 
-1. Identify project shape: frontend-only, full-stack, API service, BFF, SaaS/dashboard, public API, internal monorepo, edge/serverless, or long-running workflow system.
-2. Decide hard constraints: React vs Vue, Node vs Bun, runtime portability, SEO/SSR, public OpenAPI needs, team Java/NestJS background, and whether SOTA AI is assumed.
-3. Pick the API contract source before picking route details.
-4. Pick backend shell by migration risk and desired developer experience.
+1. Identify project shape first: frontend-only, full-stack, API service, BFF, SaaS/dashboard, public API, internal monorepo, edge/serverless, or long-running workflow system.
+2. Decide hard constraints before naming frameworks: React vs Vue, Node vs Bun, runtime portability, SEO/SSR, public OpenAPI needs, team Java/NestJS background, and whether SOTA AI is assumed.
+3. Pick the API contract source before route details. Do not start from controller/route style.
+4. Pick backend shell by migration risk and desired developer experience. Do not pick a backend framework by habit.
 5. Pick frontend state/form/router choices by React/Vue ecosystem, not by backend taste.
-6. Add database, Redis, auth, queue, tests, and observability as explicit independent choices.
+6. Add database, Redis, auth, queue, tests, and observability as explicit independent choices. Do not let framework starter templates decide these implicitly.
 
 Load [references/stack-matrix.md](references/stack-matrix.md) for the full recommendation matrix.
 
 ## Defaults
 
-- Runtime: prefer Node.js 24 for conservative Node deployments, or a current stable Bun release for Bun-first projects.
-- TypeScript config: prefer `module: "NodeNext"`, `moduleResolution: "NodeNext"`, and `esModuleInterop: true` for new server-side projects unless the repository is intentionally CommonJS-only.
-- API contract: oRPC contract-first plus generated OpenAPI for public/stable APIs.
-- Schema: Valibot or Zod by default; ArkType for advanced type-heavy projects.
-- Database: PostgreSQL + Drizzle by default; Kysely for SQL-heavy work; Prisma only when team CRUD DX and onboarding matter more than explicit SQL control.
-- Auth: Better Auth by default, with authorization in policy/usecase rather than scattered routes.
-- Redis: node-redis or equivalent as cache/session/rate-limit/idempotency helper, not as primary domain database.
-- Queue: pg-boss first when PostgreSQL is already enough; BullMQ when Redis is already part of the system; Temporal for durable long workflows.
-- Tests: Vitest for unit/integration, Playwright for E2E, contract tests for public API.
-- Observability: OpenTelemetry plus pino, with request/user/tenant/trace identifiers where applicable.
+Use these defaults unless the project has a documented reason to deviate:
+
+- Runtime: use Node.js 24 for conservative Node deployments, or a current stable Bun release for Bun-first projects.
+- TypeScript config: use `module: "NodeNext"`, `moduleResolution: "NodeNext"`, and `esModuleInterop: true` for new server-side projects unless the repository is intentionally CommonJS-only. For strict `src/` gates, load `strict-typescript-source-gates`.
+- API contract: use oRPC contract-first plus generated OpenAPI for public/stable APIs.
+- Schema: use Valibot or Zod by default; use ArkType only for advanced type-heavy projects.
+- Database: use PostgreSQL + Drizzle by default; use Kysely for SQL-heavy work; use Prisma only when team CRUD DX and onboarding matter more than explicit SQL control.
+- Auth: use Better Auth by default, with authorization centralized in policy/usecase rather than scattered routes.
+- Redis: use node-redis or equivalent as cache/session/rate-limit/idempotency helper, not as primary domain database.
+- Queue: use pg-boss first when PostgreSQL is already enough; use BullMQ when Redis is already part of the system; use Temporal for durable long workflows.
+- Tests: use Vitest for unit/integration, Playwright for E2E, and contract tests for public API.
+- Observability: use OpenTelemetry plus pino, with request/user/tenant/trace identifiers where applicable.
 
 ## Backend Choices
 
-- Choose Hono when portability, thin HTTP shell, low framework magic, edge/serverless, and future migration matter.
+- Choose Hono when portability, thin HTTP shell, low framework magic, edge/serverless, and future migration matter. This is the stable lightweight default for runtime-neutral API services.
 - Choose Elysia when Bun-first development, high product DX, schema/type/runtime validation integration, and SOTA AI-assisted iteration matter.
 - Choose Fastify when the project wants traditional Node server engineering, mature plugin structure, and schema-based validation without NestJS weight.
-- Choose NestJS only when the team needs strong enterprise convention, has Java/Spring or C# background, or values uniform controller/provider/module discipline over TypeScript naturalness.
+- Choose NestJS only when the team demonstrably needs strong enterprise convention, has Java/Spring or C# background, or values uniform controller/provider/module discipline over TypeScript naturalness. Do not select it as the generic TypeScript backend default.
 - Choose tRPC mainly for full-stack/internal monorepo APIs that do not need public REST/OpenAPI governance as the primary artifact.
 
 Load [references/schema-contracts.md](references/schema-contracts.md) before deciding between oRPC-first, Elysia-first, Hono-first, Hono RPC, Eden, or tRPC.
@@ -49,6 +51,7 @@ Load [references/schema-contracts.md](references/schema-contracts.md) before dec
 - Vue default: Vue 3, Vite, Vue Router, TanStack Query Vue or Pinia Colada, Pinia for client state, TanStack Form Vue or VeeValidate, shadcn-vue/Reka UI, Tailwind CSS.
 - Do not default to Next.js or Nuxt for complex backend domains. Use them for SSR/SEO/content needs, and keep complex domain backend independent.
 - Do not store server resource cache in Zustand or Pinia when TanStack Query or equivalent owns it.
+- Do not handwrite API response types in frontend code when a contract or schema-derived client already owns them.
 
 ## Recommended Recipes
 

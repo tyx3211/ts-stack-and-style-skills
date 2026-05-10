@@ -7,38 +7,40 @@ description: Use when choosing or comparing TypeScript project stacks, front-end
 
 ## 概览
 
-在选择 TypeScript 技术栈时，核心原则是：让 API 契约（contract）与运行时 schema（运行时校验结构）保持显式、让业务逻辑独立于框架上下文、并让框架选择匹配项目风险、团队背景、运行时约束以及 AI 辅助维护方式。
+在选择 TypeScript 技术栈时，核心原则是：强制保持 API 契约（contract）与运行时 schema（运行时校验结构）显式、让业务逻辑独立于框架上下文、并让框架选择匹配项目风险、团队背景、运行时约束以及 AI 辅助维护方式。技术选型应当被视为架构决策；除非有具体项目约束，否则默认规则应直接生效。
 
 ## 选型流程
 
-1. 先识别项目形态：纯前端、全栈、API 服务、BFF（后端为前端服务）、SaaS / dashboard（管理后台）、公共 API、内部 monorepo（单仓多包）、edge / serverless（边缘 / 无服务器），或者长生命周期工作流系统。
-2. 再确定硬约束：React 还是 Vue，Node 还是 Bun，是否要求运行时可移植性，是否需要 SEO / SSR，是否必须输出公开 OpenAPI，团队是否有 Java / NestJS 背景，以及是否默认依赖当前较强的 AI 辅助开发能力。
-3. 在决定具体路由写法之前，先决定 API 契约的来源。
-4. 再根据迁移风险和期望的开发体验，选择后端外壳框架。
+1. 必须先识别项目形态：纯前端、全栈、API 服务、BFF（后端为前端服务）、SaaS / dashboard（管理后台）、公共 API、内部 monorepo（单仓多包）、edge / serverless（边缘 / 无服务器），或者长生命周期工作流系统。
+2. 在点名框架之前，必须先确定硬约束：React 还是 Vue，Node 还是 Bun，是否要求运行时可移植性，是否需要 SEO / SSR，是否必须输出公开 OpenAPI，团队是否有 Java / NestJS 背景，以及是否默认依赖当前较强的 AI 辅助开发能力。
+3. 在决定具体路由写法之前，先决定 API 契约的来源。不要从 controller / route 风格开始倒推契约。
+4. 再根据迁移风险和期望的开发体验，选择后端外壳框架。不要按习惯选择后端框架。
 5. 前端的状态管理、表单和路由选择，应按 React / Vue 各自生态来决定，而不是按后端框架口味来决定。
-6. 数据库、Redis、认证、队列、测试和可观测性都应该作为显式的独立选择，而不是隐含附带项。
+6. 数据库、Redis、认证、队列、测试和可观测性都必须作为显式的独立选择，不允许交给框架脚手架隐式决定。
 
 完整推荐矩阵请读取 [references/stack-matrix.md](references/stack-matrix.md)。
 
 ## 默认建议
 
-- 运行时：保守的 Node 部署优先 Node.js 24；Bun-first（以 Bun 为先）的项目优先当前稳定版 Bun。
-- TypeScript 配置：对于新的服务端项目，除非仓库明确只打算使用 CommonJS，否则优先使用 `module: "NodeNext"`、`moduleResolution: "NodeNext"` 和 `esModuleInterop: true`。
-- API 契约：默认优先 oRPC 的 contract-first（契约优先）模式，并为公开 / 稳定 API 生成 OpenAPI。
-- Schema：默认优先 Valibot 或 Zod；类型表达特别复杂的项目再考虑 ArkType。
-- 数据库：默认优先 PostgreSQL + Drizzle；SQL 很重的场景考虑 Kysely；只有当团队更看重 CRUD（增删改查）开发体验和新人上手成本时，再考虑 Prisma。
-- 认证：默认优先 Better Auth，并把授权逻辑集中在 policy / usecase（策略 / 用例）层，而不是散落在路由里。
-- Redis：默认只把 node-redis 或同类方案用作缓存、会话、限流、幂等辅助，而不是主要领域数据库。
-- 队列：已有 PostgreSQL 时优先 pg-boss；系统已经依赖 Redis 时考虑 BullMQ；需要可持久的长工作流时考虑 Temporal。
-- 测试：默认使用 Vitest 做单元 / 集成测试，Playwright 做 E2E（端到端）测试，公开 API 再补 contract test（契约测试）。
-- 可观测性：默认使用 OpenTelemetry 加 pino，并在适用场景下保留 request / user / tenant / trace 标识。
+除非项目有明确记录的偏离理由，否则使用以下默认项：
+
+- 运行时：保守的 Node 部署使用 Node.js 24；Bun-first（以 Bun 为先）的项目使用当前稳定版 Bun。
+- TypeScript 配置：对于新的服务端项目，除非仓库明确只打算使用 CommonJS，否则使用 `module: "NodeNext"`、`moduleResolution: "NodeNext"` 和 `esModuleInterop: true`。如果要定义严格 `src/` 门禁，加载 `strict-typescript-source-gates-zh`。
+- API 契约：使用 oRPC 的 contract-first（契约优先）模式，并为公开 / 稳定 API 生成 OpenAPI。
+- Schema：默认使用 Valibot 或 Zod；只有类型表达特别复杂的项目才考虑 ArkType。
+- 数据库：默认使用 PostgreSQL + Drizzle；SQL 很重的场景使用 Kysely；只有当团队更看重 CRUD（增删改查）开发体验和新人上手成本时，才使用 Prisma。
+- 认证：默认使用 Better Auth，并把授权逻辑集中在 policy / usecase（策略 / 用例）层，而不是散落在路由里。
+- Redis：只把 node-redis 或同类方案用作缓存、会话、限流、幂等辅助，不把它当主要领域数据库。
+- 队列：已有 PostgreSQL 时先使用 pg-boss；系统已经依赖 Redis 时使用 BullMQ；需要可持久的长工作流时使用 Temporal。
+- 测试：使用 Vitest 做单元 / 集成测试，Playwright 做 E2E（端到端）测试，公开 API 必须补 contract test（契约测试）。
+- 可观测性：使用 OpenTelemetry 加 pino，并在适用场景下保留 request / user / tenant / trace 标识。
 
 ## 后端选择
 
-- 当我们需要运行时可移植性、轻量 HTTP 外壳、低框架魔法、edge / serverless 适配性，以及未来迁移空间时，优先 Hono。
+- 当我们需要运行时可移植性、轻量 HTTP 外壳、低框架魔法、edge / serverless 适配性，以及未来迁移空间时，选择 Hono。它是运行时中立 API 服务的稳定轻量默认项。
 - 当我们是 Bun-first 开发、非常重视产品开发体验、希望 schema / 类型 / 运行时校验整合更紧密，并且默认使用较强 AI 辅助快速迭代时，优先 Elysia。
 - 当项目更偏传统 Node 服务工程、需要成熟的插件结构，并希望有 schema 驱动的校验但又不想引入 NestJS 那样的重量级约束时，优先 Fastify。
-- 只有当团队明确需要企业级强约定、成员有 Java / Spring 或 C# 背景，或者更看重统一的 controller / provider / module 纪律而不是 TypeScript 的自然写法时，才选择 NestJS。
+- 只有当团队能证明确实需要企业级强约定、成员有 Java / Spring 或 C# 背景，或者更看重统一的 controller / provider / module 纪律而不是 TypeScript 的自然写法时，才选择 NestJS。不要把 NestJS 当成后端 TypeScript 的通用默认项。
 - tRPC 主要适合全栈 / 内部 monorepo API，尤其是公开 REST / OpenAPI 治理并不是主产物的场景。
 
 在决定 oRPC-first、Elysia-first、Hono-first、Hono RPC、Eden 或 tRPC 之前，先读取 [references/schema-contracts.md](references/schema-contracts.md)。
@@ -49,6 +51,7 @@ description: Use when choosing or comparing TypeScript project stacks, front-end
 - Vue 默认栈：Vue 3、Vite、Vue Router、TanStack Query Vue 或 Pinia Colada、Pinia 负责客户端状态、TanStack Form Vue 或 VeeValidate、shadcn-vue / Reka UI、Tailwind CSS。
 - 对于复杂后端领域，不要默认把 Next.js 或 Nuxt 当成主要后端方案。它们更适合 SSR / SEO / 内容需求，而复杂领域后端应该保持独立。
 - 如果 TanStack Query 或同类工具已经负责 server resource cache（服务端资源缓存），就不要再把同一份缓存重复塞进 Zustand 或 Pinia。
+- 如果契约或 schema 派生 client 已经拥有 API 响应类型，前端不得手写重复响应类型。
 
 ## 推荐配方
 
