@@ -119,11 +119,33 @@ export default [
       "@typescript-eslint/no-unsafe-return": "error",
       "@typescript-eslint/strict-boolean-expressions": "error",
       "@typescript-eslint/no-unnecessary-type-assertion": "error",
+      "@typescript-eslint/no-unsafe-type-assertion": "error",
       "@typescript-eslint/method-signature-style": ["error", "property"]
     }
   }
 ];
 ```
+
+对于定义 domain model（领域模型）、shared library（共享库）、core utility（核心工具）、protocol layer（协议层）等边界敏感代码的源码目录，还应强制 readonly parameter type（只读参数类型）：
+
+```js
+export default [
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/prefer-readonly-parameter-types": "warn"
+    }
+  },
+  {
+    files: ["src/{core,domain,lib,shared,utils,protocols}/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/prefer-readonly-parameter-types": "error"
+    }
+  }
+];
+```
+
+如果这条规则在 framework-heavy UI（框架类型很重的界面层）或应用胶水代码里噪音太大，可以在这些目录保持 `warn`，或者暂不开。但不要因此放宽边界敏感源码目录的 `error` 规则。
 
 断言策略：
 
@@ -146,7 +168,7 @@ export default [
 
 ## 双变与 Unsound 写法规避
 
-TypeScript 为了 JavaScript 兼容保留了一些 unsound（类型系统不完全可靠）行为。`strictFunctionTypes` 能收紧一部分问题，但 method declaration（方法声明）和 constructor declaration（构造器声明）仍保留历史双变口子。项目代码必须通过写法和 lint 规则主动收口。
+TypeScript 为了 JavaScript 兼容保留了一些 unsound（类型系统不完全可靠）行为。`strictFunctionTypes` 能收紧一部分问题，但 method declaration（方法声明）和 constructor declaration（构造器声明）仍保留历史双变口子。已经验证到 TypeScript 6.0.3 里，class-to-class structural assignment（具体 class 之间的结构化赋值）配合 prototype method（原型方法）仍可能通过类型检查，然后在运行时报错。项目代码必须通过写法、lint 规则和 review 门禁主动收口。
 
 callback 类能力使用 function property（函数属性）：
 
@@ -164,9 +186,22 @@ interface Handler<T> {
 }
 ```
 
+class 实现仍然可以使用 prototype method：
+
+```ts
+class DogHandler implements Handler<Dog> {
+  handle(value: Dog): void {
+    value.bark();
+  }
+}
+```
+
+不要为了满足边界规则，就把普通 class method（类方法）改成 arrow/function field（箭头函数字段 / 函数字段）。class 函数字段是每个实例一份的函数，不是 prototype method；只有在 callback 字段确实需要稳定 `this` 绑定时才使用。
+
 规则：
 
 - callback、handler、visitor、comparer、middleware、listener 等形状应使用 function property，而不是 method signature。
+- 禁止把 concrete class type（具体 class 类型）当抽象边界使用。抽象边界必须改用 `interface` 或 `type`，并把函数成员写成 function property。
 - 公开输入集合默认使用 `readonly T[]` 或 `ReadonlyArray<T>`。
 - 只有当函数明确拥有该数组，或者契约明确要求函数修改该数组时，才使用可变 `T[]`。
 - 不要通过别名把窄的 mutable array（可变数组）扩宽成宽的 mutable array，例如把 `Dog[]` 直接赋给 `Animal[]`。如果需要可变的宽类型数组，先拷贝：`const animals: Animal[] = [...dogs]`。
@@ -174,6 +209,69 @@ interface Handler<T> {
 - 优先小型 capability interface（能力接口）和组合，而不是继承树。
 - 对 plugin registry（插件注册表）、dependency container（依赖容器）、ORM factory（ORM 工厂）等泛型创建边界，优先 factory function（工厂函数），例如 `create: (config: Config) => Plugin`，而不是 `new (config: Config) => Plugin`。
 - class method 可以用于内禀实现细节，但不要把 method signature 当成泛型 callback 边界形状。
+- 禁止把裸 class method 直接作为 callback 传出。使用 wrapper（包装函数），例如 `(value) => service.handle(value)`，或者使用明确设计过的绑定 callback 字段。
+- `noImplicitOverride` 不是 variance safety switch（变型安全开关）。它只能要求写出 `override`，不能让 prototype method 参数自动变成严格逆变检查。
+- override 不允许把参数类型从基类契约缩窄成子类窄类型。如果子类只想特殊处理窄类型，保持基类签名不变，在方法体内部收窄。
+
+禁止的 class-to-class 边界：
+
+```ts
+class AnimalHandler {
+  handle(value: Animal): void {}
+}
+
+class DogHandler {
+  handle(value: Dog): void {
+    value.bark();
+  }
+}
+
+const handler: AnimalHandler = new DogHandler(); // 禁止：可能通过类型检查并在运行时报错
+```
+
+必须使用的边界形状：
+
+```ts
+interface Handler<T> {
+  handle: (value: T) => void;
+}
+
+class DogHandler implements Handler<Dog> {
+  handle(value: Dog): void {
+    value.bark();
+  }
+}
+
+const handler: Handler<Animal> = new DogHandler(); // 会被 strictFunctionTypes 拦住
+```
+
+禁止的 override 参数缩窄：
+
+```ts
+class BaseHandler {
+  handle(value: Animal): void {}
+}
+
+class DerivedHandler extends BaseHandler {
+  override handle(value: Dog): void {
+    value.bark();
+  }
+}
+```
+
+必须使用的 override 形状：
+
+```ts
+class DerivedHandler extends BaseHandler {
+  override handle(value: Animal): void {
+    if (value instanceof Dog) {
+      value.bark();
+    }
+  }
+}
+```
+
+极少数情况下，如果某个 concrete class 必须防止结构相同的 class 互相赋值，可以加 `private` 或 `protected` brand（品牌字段）。不要到处滥用 brand；默认抽象路线仍然是 `interface` 或 `type`。
 
 ## Hooks 与 CI
 
@@ -207,3 +305,14 @@ interface Handler<T> {
 - 公开数组入参是否默认 readonly？
 - 可变数组扩宽时是否先拷贝，而不是共享别名？
 - 泛型插件或注册表边界是否避免 constructor type？
+
+## 双变专项 Review
+
+在接收大型 AI 生成 TypeScript 改动前，以及周期性代码巡检时，专门跑这一轮 review：
+
+- 搜索 concrete class-to-class structural assignment（具体 class 之间的结构化赋值），尤其是 `const x: SomeClass = new OtherClass()`。
+- 搜索参数类型比基类 method 更窄的 `override` method。
+- 搜索 method-shaped generic boundary（方法形状的泛型边界），例如 `handle(value: T): void`、`compare(a: T, b: T): number`、`visit(node: T): void`。
+- 搜索 mutable array widening alias（可变数组扩宽别名），例如 `const animals: Animal[] = dogs`。
+- 搜索把 constructor type（构造器类型）用于泛型注册表或依赖注入边界的写法。
+- 搜索把裸 method reference（方法引用）当 callback 传出的写法，例如 `emitter.on("x", service.handle)`。

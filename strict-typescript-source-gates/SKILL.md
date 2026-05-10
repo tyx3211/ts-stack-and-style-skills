@@ -119,11 +119,33 @@ export default [
       "@typescript-eslint/no-unsafe-return": "error",
       "@typescript-eslint/strict-boolean-expressions": "error",
       "@typescript-eslint/no-unnecessary-type-assertion": "error",
+      "@typescript-eslint/no-unsafe-type-assertion": "error",
       "@typescript-eslint/method-signature-style": ["error", "property"]
     }
   }
 ];
 ```
+
+For source directories that define domain models, shared libraries, core utilities, protocol layers, or other boundary-sensitive code, also enforce readonly parameter types:
+
+```js
+export default [
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/prefer-readonly-parameter-types": "warn"
+    }
+  },
+  {
+    files: ["src/{core,domain,lib,shared,utils,protocols}/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/prefer-readonly-parameter-types": "error"
+    }
+  }
+];
+```
+
+If this rule is too noisy in framework-heavy UI or application glue code, keep it as `warn` or omit it there. Do not weaken the core rule for boundary-sensitive source code.
 
 Assertion policy:
 
@@ -146,7 +168,7 @@ If the stock ESLint rule set cannot express "allow `as const`, reject other asse
 
 ## Variance And Unsoundness Rules
 
-TypeScript keeps some unsound behavior for JavaScript compatibility. `strictFunctionTypes` helps, but method and constructor declarations still preserve historical bivariance holes. Project code should close those holes by style and lint rules.
+TypeScript keeps some unsound behavior for JavaScript compatibility. `strictFunctionTypes` helps, but method and constructor declarations still preserve historical bivariance holes. TypeScript 6.0.3 still allows class-to-class structural assignment with prototype methods in cases that can crash at runtime. Project code must close those holes by style, lint rules, and review gates.
 
 Use function properties for callback-like capabilities:
 
@@ -164,9 +186,22 @@ interface Handler<T> {
 }
 ```
 
+Class implementations may still use prototype methods:
+
+```ts
+class DogHandler implements Handler<Dog> {
+  handle(value: Dog): void {
+    value.bark();
+  }
+}
+```
+
+Do not rewrite ordinary class methods into arrow/function fields just to satisfy the boundary rule. Class function fields are per-instance functions, not prototype methods, and should be reserved for callback fields that need stable `this` binding.
+
 Rules:
 
 - Callback, handler, visitor, comparer, middleware, and listener shapes should use function properties, not method signatures.
+- Concrete class types must not be used as abstract boundaries. Use `interface` or `type` boundaries with function properties instead.
 - Public input collections default to `readonly T[]` or `ReadonlyArray<T>`.
 - Only use mutable `T[]` when the function owns the array or explicitly mutates it as part of its contract.
 - Do not widen a narrow mutable array by aliasing it, such as assigning `Dog[]` to `Animal[]`. If a mutable widened array is needed, copy first: `const animals: Animal[] = [...dogs]`.
@@ -174,6 +209,69 @@ Rules:
 - Prefer small capability interfaces and composition over inheritance trees.
 - For plugin registries, dependency containers, ORM factories, and other generic creation boundaries, prefer factory functions over constructor signatures: `create: (config: Config) => Plugin` instead of `new (config: Config) => Plugin`.
 - Class methods are acceptable for intrinsic implementation details, but should not be used as generic callback boundary shapes.
+- Do not pass bare class methods as callbacks. Use a wrapper such as `(value) => service.handle(value)` or a deliberately bound callback field.
+- `noImplicitOverride` is not a variance-safety switch. It only requires the `override` keyword; it does not make prototype method parameters strictly contravariant.
+- Overrides must not narrow parameter types from the base contract. If the subclass handles a narrower case specially, keep the base signature and narrow inside the method body.
+
+Forbidden class-to-class boundary:
+
+```ts
+class AnimalHandler {
+  handle(value: Animal): void {}
+}
+
+class DogHandler {
+  handle(value: Dog): void {
+    value.bark();
+  }
+}
+
+const handler: AnimalHandler = new DogHandler(); // forbidden: may pass typecheck and fail at runtime
+```
+
+Required boundary shape:
+
+```ts
+interface Handler<T> {
+  handle: (value: T) => void;
+}
+
+class DogHandler implements Handler<Dog> {
+  handle(value: Dog): void {
+    value.bark();
+  }
+}
+
+const handler: Handler<Animal> = new DogHandler(); // rejected by strictFunctionTypes
+```
+
+Forbidden override narrowing:
+
+```ts
+class BaseHandler {
+  handle(value: Animal): void {}
+}
+
+class DerivedHandler extends BaseHandler {
+  override handle(value: Dog): void {
+    value.bark();
+  }
+}
+```
+
+Required override shape:
+
+```ts
+class DerivedHandler extends BaseHandler {
+  override handle(value: Animal): void {
+    if (value instanceof Dog) {
+      value.bark();
+    }
+  }
+}
+```
+
+Rare exception: if a concrete class must be protected from structural class-to-class assignment, add a `private` or `protected` brand. Do not spread brands everywhere; the default abstraction route remains `interface` or `type`.
 
 ## Hooks And CI
 
@@ -207,3 +305,14 @@ Do not trade strictness for speed silently. Any faster path must fail on the sam
 - Are public array inputs readonly by default?
 - Are mutable widened arrays copied instead of aliased?
 - Are constructor types avoided for generic plugin or registry boundaries?
+
+## Variance Review Pass
+
+Run this focused review periodically and before accepting large AI-generated TypeScript changes:
+
+- Search for concrete class-to-class structural assignment, especially `const x: SomeClass = new OtherClass()`.
+- Search for `override` methods whose parameter types are narrower than the base method.
+- Search for method-shaped generic boundaries such as `handle(value: T): void`, `compare(a: T, b: T): number`, or `visit(node: T): void`.
+- Search for mutable array widening aliases such as `const animals: Animal[] = dogs`.
+- Search for constructor types used as generic registry or dependency-injection boundaries.
+- Search for bare method references passed as callbacks, such as `emitter.on("x", service.handle)`.
