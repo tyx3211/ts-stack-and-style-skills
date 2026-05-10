@@ -11,7 +11,8 @@ Follow a TypeScript style that is schema-first at boundaries, function/module-fi
 
 ## Default Stance
 
-- Prefer explicit data flow, plain functions, small modules, and composition over inheritance.
+- Prefer explicit data flow, plain functions, and small modules.
+- Prefer composition and delegation over inheritance for code reuse; only use inheritance when the domain has a real, stable `is-a` relationship.
 - Treat classic OOP patterns as problem-shape vocabulary, not as implementation templates.
 - Avoid Java/Spring-style TypeScript: controller classes, thick service/repository/manager layers, decorator-heavy dependency injection, and empty forwarding abstractions.
 - Use framework conventions already present in the repository when they conflict with this skill, but avoid introducing heavier patterns without a local reason.
@@ -78,6 +79,7 @@ Load [references/service-boundaries.md](references/service-boundaries.md) when e
 ## ESLint, Hooks, And Type Safety
 
 - Treat ESLint and TypeScript config as executable project law, not stylistic suggestions.
+- When defining or tightening `src/` tsconfig, ESLint, npm scripts, hooks, CI gates, assertion policy, or variance-safety rules, load `strict-typescript-source-gates`.
 - In non-test handwritten production code, explicit `any` should be forbidden; `noImplicitAny` should be enabled so implicit `any` is also blocked.
 - Prefer `unknown` for untrusted external values, then narrow with `typeof`, custom guards, or schema parsing before use.
 - Do not use `as` assertions to replace runtime validation. In particular, avoid `JSON.parse(...) as T`, `payload.value as number`, and `as unknown as T` unless there is a narrow, documented interoperability reason.
@@ -86,7 +88,7 @@ Load [references/service-boundaries.md](references/service-boundaries.md) when e
 - Keep local hooks thin: they should call stable commands such as `npm run lint`, `npm run typecheck`, `npm run build`, or `npm run verify`, not duplicate hidden logic.
 - CI remains the final clean-environment verdict; hooks give fast local feedback and teach agents through clear failures.
 
-Load [references/lint-hooks-type-safety.md](references/lint-hooks-type-safety.md) when changing ESLint, hooks, CI gates, generated-code linting, `any`/`unknown`, assertions, type guards, schema parsing, equality checks, or numeric validation.
+Load [references/lint-hooks-type-safety.md](references/lint-hooks-type-safety.md) when changing ESLint, hooks, CI gates, generated-code linting, `any`/`unknown`, assertions, type guards, schema parsing, equality checks, or numeric validation. For hard `src/` gates, also load `strict-typescript-source-gates`.
 
 ## Performance And Shape Discipline
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Strict TypeScript Source Gates"
+  short_description: "Strict src-level TypeScript, ESLint, hook, CI, assertion, and variance-safety gates"
+  default_prompt: "Use $strict-typescript-source-gates when defining or reviewing strict TypeScript source gates."

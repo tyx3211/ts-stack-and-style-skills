@@ -2,6 +2,8 @@
 
 ## ESLint Baseline
 
+For hard `src/` gates, load `strict-typescript-source-gates`; this reference gives the broader rationale and review checklist.
+
 For handwritten main code outside tests, enforce these as errors where the repository tooling supports them:
 
 ```txt

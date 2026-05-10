@@ -2,6 +2,8 @@
 
 ## ESLint 基线
 
+如果是 `src/` 硬门禁，请加载 `strict-typescript-source-gates-zh`；本文档主要提供更宽泛的背景和 review 清单。
+
 对于测试之外、手写的主生产代码，只要仓库工具链支持，就应把以下项作为错误级别执行：
 
 ```txt
