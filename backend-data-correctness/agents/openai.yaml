@@ -1,0 +1,4 @@
+interface:
+  display_name: "Backend Data Correctness"
+  short_description: "PG, Drizzle, Redis, cache, and transaction correctness"
+  default_prompt: "Use $backend-data-correctness when implementing or reviewing TypeScript backend data access."

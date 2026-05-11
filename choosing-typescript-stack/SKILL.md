@@ -35,6 +35,8 @@ Use these defaults unless the project has a documented reason to deviate:
 - Tests: use Vitest for unit/integration, Playwright for E2E, and contract tests for public API.
 - Observability: use OpenTelemetry plus pino, with request/user/tenant/trace identifiers where applicable.
 
+When selecting PostgreSQL, Drizzle, Kysely, Redis, cache, queue, idempotency, or backend data-access patterns, also load `backend-data-correctness`.
+
 ## Backend Choices
 
 - Choose Hono when portability, thin HTTP shell, low framework magic, edge/serverless, and future migration matter. This is the stable lightweight default for runtime-neutral API services.

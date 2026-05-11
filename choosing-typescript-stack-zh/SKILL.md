@@ -35,6 +35,8 @@ description: Use when choosing or comparing TypeScript project stacks, front-end
 - 测试：使用 Vitest 做单元 / 集成测试，Playwright 做 E2E（端到端）测试，公开 API 必须补 contract test（契约测试）。
 - 可观测性：使用 OpenTelemetry 加 pino，并在适用场景下保留 request / user / tenant / trace 标识。
 
+当选择 PostgreSQL、Drizzle、Kysely、Redis、cache（缓存）、queue（队列）、idempotency（幂等）或后端数据访问模式时，也要加载 `backend-data-correctness-zh`。
+
 ## 后端选择
 
 - 当我们需要运行时可移植性、轻量 HTTP 外壳、低框架魔法、edge / serverless 适配性，以及未来迁移空间时，选择 Hono。它是运行时中立 API 服务的稳定轻量默认项。

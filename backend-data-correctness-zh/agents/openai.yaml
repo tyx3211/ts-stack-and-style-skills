@@ -1,0 +1,4 @@
+interface:
+  display_name: "后端数据正确性"
+  short_description: "PG、Drizzle、Redis、缓存与事务正确性"
+  default_prompt: "Use $backend-data-correctness-zh when implementing or reviewing TypeScript backend data access in Chinese workflow contexts."

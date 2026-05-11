@@ -4,14 +4,16 @@ English | [中文](README.zh-CN.md)
 
 Codex-first open-source skill pack for TypeScript stack selection and TypeScript coding style decisions.
 
-This repository packages six complete skills:
+This repository packages eight complete skills:
 
 - `choosing-typescript-stack`
 - `typescript-coding-preferences`
 - `strict-typescript-source-gates`
+- `backend-data-correctness`
 - `choosing-typescript-stack-zh`
 - `typescript-coding-preferences-zh`
 - `strict-typescript-source-gates-zh`
+- `backend-data-correctness-zh`
 
 Each skill includes its own `SKILL.md` and `agents/openai.yaml`, with `references/` included where the skill needs supporting documents. Users can reproduce the original behavior instead of copying only the top-level markdown.
 
@@ -37,6 +39,10 @@ Use when writing, refactoring, or reviewing TypeScript code with a preference fo
 
 Use when defining or reviewing strict `src/` TypeScript gates: tsconfig, ESLint, npm scripts, hooks, CI, assertion policy, and variance-safety rules.
 
+### `backend-data-correctness`
+
+Use when implementing or reviewing TypeScript backend data access: PostgreSQL, Drizzle, Kysely, Redis, cache adapters, transactions, concurrency control, idempotency, outbox, migrations, queues, and Hono/oRPC repository boundaries.
+
 ### `choosing-typescript-stack-zh`
 
 Chinese edition of the stack selection skill, including translated references.
@@ -49,6 +55,10 @@ Chinese edition of the coding preferences skill, including translated references
 
 Chinese edition of the strict TypeScript source gates skill.
 
+### `backend-data-correctness-zh`
+
+Chinese edition of the backend data correctness skill.
+
 ## Repository Layout
 
 ```txt
@@ -60,9 +70,11 @@ ts-stack-and-style-skills/
   choosing-typescript-stack/
   typescript-coding-preferences/
   strict-typescript-source-gates/
+  backend-data-correctness/
   choosing-typescript-stack-zh/
   typescript-coding-preferences-zh/
   strict-typescript-source-gates-zh/
+  backend-data-correctness-zh/
 ```
 
 ## Installation
@@ -76,9 +88,11 @@ mkdir -p ~/.codex/skills
 cp -r choosing-typescript-stack ~/.codex/skills/
 cp -r typescript-coding-preferences ~/.codex/skills/
 cp -r strict-typescript-source-gates ~/.codex/skills/
+cp -r backend-data-correctness ~/.codex/skills/
 cp -r choosing-typescript-stack-zh ~/.codex/skills/
 cp -r typescript-coding-preferences-zh ~/.codex/skills/
 cp -r strict-typescript-source-gates-zh ~/.codex/skills/
+cp -r backend-data-correctness-zh ~/.codex/skills/
 ```
 
 After that, the skills can be referenced by name in Codex prompts or selected when the triggering conditions match.

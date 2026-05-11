@@ -149,6 +149,22 @@ export default [
 
 如果这条规则在 framework-heavy UI（框架类型很重的界面层）或应用胶水代码里噪音太大，可以在这些目录保持 `warn`，或者暂不开。但不要因此放宽边界敏感源码目录的 `error` 规则。
 
+对于 Drizzle 项目，如果可用，也应开启 Drizzle ESLint 规则：
+
+```js
+export default [
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "drizzle/enforce-delete-with-where": "error",
+      "drizzle/enforce-update-with-where": "error"
+    }
+  }
+];
+```
+
+如果暂时无法使用插件，就用本地 lint 规则或 review 门禁执行同等政策。更详细的数据库与 Redis 正确性规则属于 `backend-data-correctness-zh`。
+
 断言策略：
 
 - 允许 `as const`。

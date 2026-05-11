@@ -4,14 +4,16 @@
 
 这是一个面向 Codex 优先使用场景的开源 skill 仓库，聚焦于 TypeScript 技术选型与 TypeScript 编码风格约束。
 
-本仓库一共提供 6 个完整 skill：
+本仓库一共提供 8 个完整 skill：
 
 - `choosing-typescript-stack`
 - `typescript-coding-preferences`
 - `strict-typescript-source-gates`
+- `backend-data-correctness`
 - `choosing-typescript-stack-zh`
 - `typescript-coding-preferences-zh`
 - `strict-typescript-source-gates-zh`
+- `backend-data-correctness-zh`
 
 每个 skill 都包含自己的 `SKILL.md` 和 `agents/openai.yaml`，并在需要额外参考资料时包含 `references/`。因此我们提供的是可直接复现的完整 skill 包，而不是只复制顶层 markdown 的精简版本。
 
@@ -37,6 +39,10 @@
 
 用于定义或审查严格的 `src/` TypeScript 门禁，包括 tsconfig、ESLint、npm scripts、hooks、CI、断言策略和双变安全写法。
 
+### `backend-data-correctness`
+
+用于实现或审查 TypeScript 后端数据访问，包括 PostgreSQL、Drizzle、Kysely、Redis、cache adapter（缓存适配器）、事务、并发控制、幂等、outbox（事务外发箱）、迁移、队列与 Hono/oRPC 仓储边界。
+
 ### `choosing-typescript-stack-zh`
 
 技术选型 skill 的中文版，包含配套 references（参考文档）的中文版。
@@ -49,6 +55,10 @@
 
 严格 TypeScript 源码门禁 skill 的中文版。
 
+### `backend-data-correctness-zh`
+
+后端数据正确性 skill 的中文版。
+
 ## 仓库结构
 
 ```txt
@@ -60,9 +70,11 @@ ts-stack-and-style-skills/
   choosing-typescript-stack/
   typescript-coding-preferences/
   strict-typescript-source-gates/
+  backend-data-correctness/
   choosing-typescript-stack-zh/
   typescript-coding-preferences-zh/
   strict-typescript-source-gates-zh/
+  backend-data-correctness-zh/
 ```
 
 ## 安装方式
@@ -76,9 +88,11 @@ mkdir -p ~/.codex/skills
 cp -r choosing-typescript-stack ~/.codex/skills/
 cp -r typescript-coding-preferences ~/.codex/skills/
 cp -r strict-typescript-source-gates ~/.codex/skills/
+cp -r backend-data-correctness ~/.codex/skills/
 cp -r choosing-typescript-stack-zh ~/.codex/skills/
 cp -r typescript-coding-preferences-zh ~/.codex/skills/
 cp -r strict-typescript-source-gates-zh ~/.codex/skills/
+cp -r backend-data-correctness-zh ~/.codex/skills/
 ```
 
 复制完成后，就可以在 Codex 中按名称引用这些 skill，或者在触发条件匹配时让系统加载它们。

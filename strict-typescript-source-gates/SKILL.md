@@ -149,6 +149,22 @@ export default [
 
 If this rule is too noisy in framework-heavy UI or application glue code, keep it as `warn` or omit it there. Do not weaken the core rule for boundary-sensitive source code.
 
+For Drizzle projects, also enable Drizzle ESLint rules when available:
+
+```js
+export default [
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "drizzle/enforce-delete-with-where": "error",
+      "drizzle/enforce-update-with-where": "error"
+    }
+  }
+];
+```
+
+If the plugin cannot be used, enforce the same policy with local lint rules or review gates. Detailed database and Redis correctness rules belong in `backend-data-correctness`.
+
 Assertion policy:
 
 - `as const` is allowed.

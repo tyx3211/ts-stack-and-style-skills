@@ -82,10 +82,13 @@ Do not introduce class-based controllers, decorators, DI containers, or framewor
 
 Load [references/service-boundaries.md](references/service-boundaries.md) when editing Hono/oRPC/Elysia route, service, repo, policy, schema, or closure-based assembly code.
 
+Load `backend-data-correctness` when editing repositories, Drizzle/Kysely queries, transactions, idempotency records, outbox/job writes, Redis cache adapters, cache invalidation, migrations, or backend data-access tests.
+
 ## ESLint, Hooks, And Type Safety
 
 - Treat ESLint and TypeScript config as executable project law, not stylistic suggestions.
 - When defining or tightening `src/` tsconfig, ESLint, npm scripts, hooks, CI gates, assertion policy, or variance-safety rules, load `strict-typescript-source-gates`.
+- When tightening data-access correctness gates for PostgreSQL, Drizzle, Kysely, Redis, cache, transaction, or migration code, load `backend-data-correctness`.
 - In non-test handwritten production code, explicit `any` should be forbidden; `noImplicitAny` should be enabled so implicit `any` is also blocked.
 - Prefer `unknown` for untrusted external values, then narrow with `typeof`, custom guards, or schema parsing before use.
 - Do not use `as` assertions to replace runtime validation. In particular, avoid `JSON.parse(...) as T`, `payload.value as number`, and `as unknown as T` unless there is a narrow, documented interoperability reason.
