@@ -200,9 +200,28 @@ class DogHandler implements Handler<Dog> {
 
 Do not rewrite ordinary class methods into arrow/function fields just to satisfy the boundary rule. Class function fields are per-instance functions, not prototype methods, and should be reserved for callback fields that need stable `this` binding.
 
+Assignment target rule: with `strictFunctionTypes: true`, the decisive factor is the target member shape, not whether the outer type is a `class`, `interface`, or `type`. If the assignment target says `handle: (value: T) => void`, TypeScript applies the stricter function-parameter check. If the assignment target says `handle(value: T): void`, the historical method bivariance hole can remain even when the source member is an arrow/function property. This is why assignable `interface` and `type` boundaries must be linted into function-property form.
+
+Use this for any boundary that can appear as an assignment target, parameter type, return type, registry slot, dependency token, or exported contract:
+
+```ts
+interface Handler<T> {
+  handle: (value: T) => void;
+}
+```
+
+Do not use this for assignable boundaries:
+
+```ts
+interface Handler<T> {
+  handle(value: T): void;
+}
+```
+
 Rules:
 
 - Callback, handler, visitor, comparer, middleware, and listener shapes should use function properties, not method signatures.
+- Any `interface` or `type` used as an assignable abstraction boundary must put function members in function-property form. `@typescript-eslint/method-signature-style: ["error", "property"]` is mandatory for this reason.
 - Concrete class types must not be used as abstract boundaries. Use `interface` or `type` boundaries with function properties instead.
 - Public input collections default to `readonly T[]` or `ReadonlyArray<T>`.
 - Only use mutable `T[]` when the function owns the array or explicitly mutates it as part of its contract.
@@ -304,6 +323,7 @@ Do not trade strictness for speed silently. Any faster path must fail on the sam
 - Do hooks and CI call the same shared scripts?
 - Are tests and generated code separated from `src/` policy?
 - Are callback-like interfaces using function properties?
+- Are assignable `interface` and `type` boundaries using function properties on the target side?
 - Are public array inputs readonly by default?
 - Are mutable widened arrays copied instead of aliased?
 - Are constructor types avoided for generic plugin or registry boundaries?
@@ -315,6 +335,7 @@ Run this focused review periodically and before accepting large AI-generated Typ
 - Search for concrete class-to-class structural assignment, especially `const x: SomeClass = new OtherClass()`.
 - Search for `override` methods whose parameter types are narrower than the base method.
 - Search for method-shaped generic boundaries such as `handle(value: T): void`, `compare(a: T, b: T): number`, or `visit(node: T): void`.
+- Search for assignable `interface` or `type` targets whose function members are methods instead of function properties.
 - Search for mutable array widening aliases such as `const animals: Animal[] = dogs`.
 - Search for constructor types used as generic registry or dependency-injection boundaries.
 - Search for bare method references passed as callbacks, such as `emitter.on("x", service.handle)`.

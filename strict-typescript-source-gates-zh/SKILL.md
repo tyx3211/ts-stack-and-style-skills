@@ -200,9 +200,28 @@ class DogHandler implements Handler<Dog> {
 
 不要为了满足边界规则，就把普通 class method（类方法）改成 arrow/function field（箭头函数字段 / 函数字段）。class 函数字段是每个实例一份的函数，不是 prototype method；只有在 callback 字段确实需要稳定 `this` 绑定时才使用。
 
+赋值目标侧规则：在 `strictFunctionTypes: true` 下，决定检查强度的关键不是外层是 `class`、`interface` 还是 `type`，而是被赋值方的成员形状。目标侧写成 `handle: (value: T) => void`，TypeScript 会使用更严格的函数参数检查。目标侧写成 `handle(value: T): void`，即使来源侧是 arrow/function property（箭头函数 / 函数属性），历史 method bivariance（方法双变）口子仍可能保留。因此，可能作为赋值目标的 `interface` 和 `type` 边界必须被 lint 成 function property 形式。
+
+任何可能作为 assignment target（赋值目标）、parameter type（参数类型）、return type（返回类型）、registry slot（注册表槽位）、dependency token（依赖令牌）或 exported contract（导出契约）的边界，都使用这种写法：
+
+```ts
+interface Handler<T> {
+  handle: (value: T) => void;
+}
+```
+
+不要把可赋值边界写成这种形式：
+
+```ts
+interface Handler<T> {
+  handle(value: T): void;
+}
+```
+
 规则：
 
 - callback、handler、visitor、comparer、middleware、listener 等形状应使用 function property，而不是 method signature。
+- 任何作为 assignable abstraction boundary（可赋值抽象边界）的 `interface` 或 `type`，函数成员都必须写成 function property。`@typescript-eslint/method-signature-style: ["error", "property"]` 因此是强制规则。
 - 禁止把 concrete class type（具体 class 类型）当抽象边界使用。抽象边界必须改用 `interface` 或 `type`，并把函数成员写成 function property。
 - 公开输入集合默认使用 `readonly T[]` 或 `ReadonlyArray<T>`。
 - 只有当函数明确拥有该数组，或者契约明确要求函数修改该数组时，才使用可变 `T[]`。
@@ -304,6 +323,7 @@ class DerivedHandler extends BaseHandler {
 - hooks 和 CI 是否调用同一套共享 scripts？
 - tests 和 generated code 是否与 `src/` 政策隔离？
 - callback 类 interface 是否使用 function property？
+- 可赋值的 `interface` 和 `type` 边界是否在目标侧使用 function property？
 - 公开数组入参是否默认 readonly？
 - 可变数组扩宽时是否先拷贝，而不是共享别名？
 - 泛型插件或注册表边界是否避免 constructor type？
@@ -315,6 +335,7 @@ class DerivedHandler extends BaseHandler {
 - 搜索 concrete class-to-class structural assignment（具体 class 之间的结构化赋值），尤其是 `const x: SomeClass = new OtherClass()`。
 - 搜索参数类型比基类 method 更窄的 `override` method。
 - 搜索 method-shaped generic boundary（方法形状的泛型边界），例如 `handle(value: T): void`、`compare(a: T, b: T): number`、`visit(node: T): void`。
+- 搜索可赋值的 `interface` 或 `type` 目标侧，其函数成员是否仍是 method，而不是 function property。
 - 搜索 mutable array widening alias（可变数组扩宽别名），例如 `const animals: Animal[] = dogs`。
 - 搜索把 constructor type（构造器类型）用于泛型注册表或依赖注入边界的写法。
 - 搜索把裸 method reference（方法引用）当 callback 传出的写法，例如 `emitter.on("x", service.handle)`。
