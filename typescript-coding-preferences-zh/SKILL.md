@@ -7,9 +7,9 @@ description: Use when writing, refactoring, or reviewing TypeScript code with Ch
 
 ## 概览
 
-这里采用的 TypeScript 风格是：边界以 schema（运行时校验结构）为先，流程以函数 / 模块为先，建模以数据为先，并且有意识地减少面向对象编程（OOP，面向对象编程）的默认比重。它应被视为项目默认纪律，而不是柔性的审美偏好。class（类）只作为局部工具使用，主要服务于 entity / value object（实体 / 值对象），而不是整个架构的默认基石。
+这里采用的 TypeScript 风格是：边界以 schema（运行时校验结构）为先，流程以函数 / 模块为先，建模以数据为先，并且有意识地减少 inheritance-oriented OOP（继承导向的面向对象编程）的默认比重。它应被视为项目默认纪律，而不是柔性的审美偏好。这不是反 class（类）政策：对于确实有属性、不变量和方法需要封装的对象，class 是很合适的封装单位；但不要把继承或 class hierarchy（类层级）作为架构默认形态。
 
-这是一种有意偏 Go 式的 TypeScript：plain data（朴素数据）、函数、小接口、显式组合，以及只有在确实有收益时才使用 class。
+这是一种有意偏 Go 式的 TypeScript：plain data（朴素数据）、函数、小接口、显式组合，并且在 dot syntax（点语法）、封装、多实例或 prototype method（原型方法）共享有收益时，把 class 当作类似 Go struct + methods（Go 结构体加方法）的工具使用。
 
 ## 默认立场
 
@@ -33,7 +33,7 @@ description: Use when writing, refactoring, or reviewing TypeScript code with Ch
 在新增类型或抽象前，必须按以下顺序判断。没有完成这个检查前，不要新增 class、service 层、factory、manager 或 interface：
 
 1. 对于 API 输入输出、DTO、配置、数据库行和临时数据，优先使用普通对象数据配合 `type` 或 `interface`。
-2. 对于具有稳定局部行为的领域实体和值对象，当 `obj.method()` 可读性或原型方法共享有明确收益时，再使用 `class + interface`。
+2. 对于领域实体、值对象，以及其他确实有封装属性和稳定局部行为的对象，当 `obj.method()` 可读性、多实例、私有状态或原型方法共享有明确收益时，使用 `class + interface`。
 3. 对于跨对象、跨资源、I/O 较重或工作流编排逻辑，优先使用外部函数、`Service` / `Ops` 模块，或者小型 capability object（能力对象），而不是实例方法。
 4. 对于 AST 节点、协议消息、命令种类、状态机等有限变体，优先使用带 `kind` / `tag` 的 discriminated union（可判别联合）和尽量穷尽式的 `switch`。
 5. 对于 repo / client / service 这类只会存在少量实例的对象，factory（工厂）返回方法对象是可接受的；但不要把这种模式复制到大批量数据数组上。
@@ -51,11 +51,11 @@ description: Use when writing, refactoring, or reviewing TypeScript code with Ch
 
 ## Class 规则
 
-只有在 class 真正值得时才使用：
+当 class 作为封装单位确实有收益时，应使用 class。这一点是被鼓励的：限制对象是继承和框架式 class 架构，不是 class 本身。
 
+- 对象状态和方法本来就属于同一个封装单元，并且 `price.isZero()`、`range.contains(x)` 这类 dot syntax（点语法）能提升可读性。
 - 实体 / 值对象需要稳定不变量。
 - 实例数量很多，使用原型方法可以避免每实例函数分配。
-- 对象上只有少量内禀方法，例如 `price.isZero()`、`range.contains(x)`。
 - 需要受控构造，或者对象内部确实需要私有可变状态。
 
 class 方法应保持轻薄且内禀。持久化、编排、授权、格式化、缓存策略和多对象工作流都应放在实体外部。

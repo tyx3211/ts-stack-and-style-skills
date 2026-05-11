@@ -7,9 +7,9 @@ description: Use when writing, refactoring, or reviewing TypeScript code where s
 
 ## Overview
 
-Follow a TypeScript style that is schema-first at boundaries, function/module-first in flow, data-first in modeling, and deliberately light on object-oriented programming. Treat this as the default project discipline, not a soft aesthetic preference. Use classes as a scoped tool for entities/value objects, not as the architecture default.
+Follow a TypeScript style that is schema-first at boundaries, function/module-first in flow, data-first in modeling, and deliberately light on inheritance-oriented object-oriented programming. Treat this as the default project discipline, not a soft aesthetic preference. This is not an anti-class policy: use classes as scoped encapsulation units for real properties, invariants, and methods, but do not make inheritance or class hierarchies the architecture default.
 
-This is intentionally Go-like TypeScript: plain data, functions, small interfaces, explicit composition, and classes only when they pay for themselves.
+This is intentionally Go-like TypeScript: plain data, functions, small interfaces, explicit composition, and classes used like Go structs with methods when dot syntax, encapsulation, multiple instances, or prototype method sharing are useful.
 
 ## Default Stance
 
@@ -33,7 +33,7 @@ Load [references/runtime-tsconfig.md](references/runtime-tsconfig.md) when creat
 Use this order before adding a new type or abstraction. Do not add a class, service layer, factory, manager, or interface until this check has been applied:
 
 1. For API input/output, DTOs, configs, database rows, and temporary data, use plain object data plus `type` or `interface`.
-2. For domain entities and value objects with stable local behavior, use `class + interface` when `obj.method()` readability or prototype method sharing matters.
+2. For domain entities, value objects, and other objects with real encapsulated properties plus stable local behavior, use `class + interface` when `obj.method()` readability, multiple instances, private state, or prototype method sharing matters.
 3. For cross-object, cross-resource, I/O-heavy, or workflow logic, use external functions, `Service`/`Ops` modules, or small capability objects instead of instance methods.
 4. For finite variants such as AST nodes, protocol messages, command kinds, and state machines, use discriminated unions with `kind`/`tag` plus exhaustive `switch` where practical.
 5. For service/repo/client objects that exist in small quantities, factory-returned method objects are acceptable; do not copy that pattern onto large data arrays.
@@ -51,11 +51,11 @@ Load [references/object-modeling.md](references/object-modeling.md) when choosin
 
 ## Class Rules
 
-Use class only when it pays for itself:
+Use class as an encapsulation unit when it pays for itself. This is encouraged for real object state plus intrinsic methods; the restriction is on inheritance and framework-style class architecture, not on class itself:
 
+- Object state and methods belong together, and dot syntax such as `price.isZero()` or `range.contains(x)` improves readability.
 - Entity/value object with stable invariants.
 - Many instances where prototype methods avoid per-instance function allocation.
-- A small set of local, intrinsic methods such as `price.isZero()` or `range.contains(x)`.
 - Controlled construction or private mutable state that is genuinely local to the object.
 
 Keep class methods thin and intrinsic. Put persistence, orchestration, authorization, formatting, cache policy, and multi-object workflows outside the entity.
