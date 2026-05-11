@@ -222,7 +222,7 @@ interface Handler<T> {
 
 - callback、handler、visitor、comparer、middleware、listener 等形状应使用 function property，而不是 method signature。
 - 任何作为 assignable abstraction boundary（可赋值抽象边界）的 `interface` 或 `type`，函数成员都必须写成 function property。`@typescript-eslint/method-signature-style: ["error", "property"]` 因此是强制规则。
-- 禁止把 concrete class type（具体 class 类型）当抽象边界使用。抽象边界必须改用 `interface` 或 `type`，并把函数成员写成 function property。
+- 禁止把互不相关的 concrete class type（具体 class 类型）通过结构化赋值当抽象边界使用。抽象边界默认改用 `interface` 或 `type`，并把函数成员写成 function property。
 - 公开输入集合默认使用 `readonly T[]` 或 `ReadonlyArray<T>`。
 - 只有当函数明确拥有该数组，或者契约明确要求函数修改该数组时，才使用可变 `T[]`。
 - 不要通过别名把窄的 mutable array（可变数组）扩宽成宽的 mutable array，例如把 `Dog[]` 直接赋给 `Animal[]`。如果需要可变的宽类型数组，先拷贝：`const animals: Animal[] = [...dogs]`。
@@ -234,7 +234,15 @@ interface Handler<T> {
 - `noImplicitOverride` 不是 variance safety switch（变型安全开关）。它只能要求写出 `override`，不能让 prototype method 参数自动变成严格逆变检查。
 - override 不允许把参数类型从基类契约缩窄成子类窄类型。如果子类只想特殊处理窄类型，保持基类签名不变，在方法体内部收窄。
 
-禁止的 class-to-class 边界：
+基类多态边界态度：
+
+- 默认推荐：优先使用组合，加小型 `interface` 或 `type` capability boundary（能力边界）。这是项目风格，因为它能提供更清晰的赋值门禁，也能避免继承驱动架构。
+- 允许但要有理由：当 `abstract class`（抽象类）或基类表达真实稳定的 `is-a` 关系、共享 invariant（不变量）、protected state（受保护状态）、template method（模板方法），或者框架 / 库明确要求时，可以作为多态边界。
+- 仍然是优化候选：即使基类边界写得规范，它也只是可接受方案，不是默认偏好。在本项目组合优于继承的偏好下，如果基类不再承载真实不变量或运行时价值，应优化为组合加 capability interface。
+- 基类必须遵守的纪律：使用 `override`，不得缩窄 method 参数，让子类契约至少和基类契约一样宽；需要特殊处理窄类型时，在方法体内部收窄。
+- 如果确实想让边界接近 nominal（名义化），优先使用 `abstract` 基类，或者让基类拥有真实的 `private` / `protected` 成员。只有 public method（公开方法）的基类类型更容易被误用成结构化 class 边界。
+
+禁止的无关 class-to-class 结构化边界：
 
 ```ts
 class AnimalHandler {
@@ -250,7 +258,7 @@ class DogHandler {
 const handler: AnimalHandler = new DogHandler(); // 禁止：可能通过类型检查并在运行时报错
 ```
 
-必须使用的边界形状：
+默认推荐的边界形状：
 
 ```ts
 interface Handler<T> {
@@ -264,6 +272,24 @@ class DogHandler implements Handler<Dog> {
 }
 
 const handler: Handler<Animal> = new DogHandler(); // 会被 strictFunctionTypes 拦住
+```
+
+可接受但非默认的基类多态边界：
+
+```ts
+abstract class AnimalHandler {
+  protected readonly _handlerBrand!: void;
+
+  abstract handle(value: Animal): void;
+}
+
+class DogAwareHandler extends AnimalHandler {
+  override handle(value: Animal): void {
+    if (value instanceof Dog) {
+      value.bark();
+    }
+  }
+}
 ```
 
 禁止的 override 参数缩窄：
@@ -324,6 +350,7 @@ class DerivedHandler extends BaseHandler {
 - tests 和 generated code 是否与 `src/` 政策隔离？
 - callback 类 interface 是否使用 function property？
 - 可赋值的 `interface` 和 `type` 边界是否在目标侧使用 function property？
+- 基类多态边界是否有真实 `is-a`、不变量、受保护状态、模板方法或框架要求，而不是只为复用方便？
 - 公开数组入参是否默认 readonly？
 - 可变数组扩宽时是否先拷贝，而不是共享别名？
 - 泛型插件或注册表边界是否避免 constructor type？
@@ -334,6 +361,7 @@ class DerivedHandler extends BaseHandler {
 
 - 搜索 concrete class-to-class structural assignment（具体 class 之间的结构化赋值），尤其是 `const x: SomeClass = new OtherClass()`。
 - 搜索参数类型比基类 method 更窄的 `override` method。
+- 搜索只充当抽象能力边界的基类，并判断是否应优化为组合加 `interface` 或 `type`。
 - 搜索 method-shaped generic boundary（方法形状的泛型边界），例如 `handle(value: T): void`、`compare(a: T, b: T): number`、`visit(node: T): void`。
 - 搜索可赋值的 `interface` 或 `type` 目标侧，其函数成员是否仍是 method，而不是 function property。
 - 搜索 mutable array widening alias（可变数组扩宽别名），例如 `const animals: Animal[] = dogs`。

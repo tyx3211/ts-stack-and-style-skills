@@ -222,7 +222,7 @@ Rules:
 
 - Callback, handler, visitor, comparer, middleware, and listener shapes should use function properties, not method signatures.
 - Any `interface` or `type` used as an assignable abstraction boundary must put function members in function-property form. `@typescript-eslint/method-signature-style: ["error", "property"]` is mandatory for this reason.
-- Concrete class types must not be used as abstract boundaries. Use `interface` or `type` boundaries with function properties instead.
+- Unrelated concrete class types must not be used as abstract boundaries through structural assignment. Use `interface` or `type` boundaries with function properties instead.
 - Public input collections default to `readonly T[]` or `ReadonlyArray<T>`.
 - Only use mutable `T[]` when the function owns the array or explicitly mutates it as part of its contract.
 - Do not widen a narrow mutable array by aliasing it, such as assigning `Dog[]` to `Animal[]`. If a mutable widened array is needed, copy first: `const animals: Animal[] = [...dogs]`.
@@ -234,7 +234,15 @@ Rules:
 - `noImplicitOverride` is not a variance-safety switch. It only requires the `override` keyword; it does not make prototype method parameters strictly contravariant.
 - Overrides must not narrow parameter types from the base contract. If the subclass handles a narrower case specially, keep the base signature and narrow inside the method body.
 
-Forbidden class-to-class boundary:
+Base-class polymorphism stance:
+
+- Default recommendation: prefer composition plus small `interface` or `type` capability boundaries. This is the project style because it gives clearer assignment gates and avoids inheritance-driven architecture.
+- Allowed with justification: an `abstract class` or base class may be used as a polymorphic boundary when it represents a real stable `is-a` relationship, shared invariant, protected state, template method, or framework/library requirement.
+- Still a refactoring candidate: even when a base-class boundary is well disciplined, treat it as acceptable rather than preferred. Under this project's composition-over-inheritance bias, optimize it toward composition plus capability interfaces when the base class stops carrying real invariant or runtime value.
+- Required discipline for base classes: use `override`, do not narrow method parameters, keep subclass contracts at least as wide as the base contract, and narrow inside method bodies when needed.
+- Prefer `abstract` base classes or base classes with real `private`/`protected` members when the boundary is intentionally nominal-ish. A public-method-only base type is easier to accidentally treat as a structural class boundary.
+
+Forbidden unrelated class-to-class structural boundary:
 
 ```ts
 class AnimalHandler {
@@ -250,7 +258,7 @@ class DogHandler {
 const handler: AnimalHandler = new DogHandler(); // forbidden: may pass typecheck and fail at runtime
 ```
 
-Required boundary shape:
+Default recommended boundary shape:
 
 ```ts
 interface Handler<T> {
@@ -264,6 +272,24 @@ class DogHandler implements Handler<Dog> {
 }
 
 const handler: Handler<Animal> = new DogHandler(); // rejected by strictFunctionTypes
+```
+
+Acceptable but non-default base-class polymorphism:
+
+```ts
+abstract class AnimalHandler {
+  protected readonly _handlerBrand!: void;
+
+  abstract handle(value: Animal): void;
+}
+
+class DogAwareHandler extends AnimalHandler {
+  override handle(value: Animal): void {
+    if (value instanceof Dog) {
+      value.bark();
+    }
+  }
+}
 ```
 
 Forbidden override narrowing:
@@ -324,6 +350,7 @@ Do not trade strictness for speed silently. Any faster path must fail on the sam
 - Are tests and generated code separated from `src/` policy?
 - Are callback-like interfaces using function properties?
 - Are assignable `interface` and `type` boundaries using function properties on the target side?
+- Are base-class polymorphism boundaries justified by real `is-a`, invariant, protected state, template method, or framework requirements rather than reuse convenience?
 - Are public array inputs readonly by default?
 - Are mutable widened arrays copied instead of aliased?
 - Are constructor types avoided for generic plugin or registry boundaries?
@@ -334,6 +361,7 @@ Run this focused review periodically and before accepting large AI-generated Typ
 
 - Search for concrete class-to-class structural assignment, especially `const x: SomeClass = new OtherClass()`.
 - Search for `override` methods whose parameter types are narrower than the base method.
+- Search for base classes that act only as abstract capability boundaries and can be optimized toward composition plus `interface` or `type`.
 - Search for method-shaped generic boundaries such as `handle(value: T): void`, `compare(a: T, b: T): number`, or `visit(node: T): void`.
 - Search for assignable `interface` or `type` targets whose function members are methods instead of function properties.
 - Search for mutable array widening aliases such as `const animals: Animal[] = dogs`.
