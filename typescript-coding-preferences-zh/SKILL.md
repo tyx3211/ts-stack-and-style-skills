@@ -9,6 +9,8 @@ description: Use when writing, refactoring, or reviewing TypeScript code with Ch
 
 这里采用的 TypeScript 风格是：边界以 schema（运行时校验结构）为先，流程以函数 / 模块为先，建模以数据为先，并且有意识地减少面向对象编程（OOP，面向对象编程）的默认比重。它应被视为项目默认纪律，而不是柔性的审美偏好。class（类）只作为局部工具使用，主要服务于 entity / value object（实体 / 值对象），而不是整个架构的默认基石。
 
+这是一种有意偏 Go 式的 TypeScript：plain data（朴素数据）、函数、小接口、显式组合，以及只有在确实有收益时才使用 class。
+
 ## 默认立场
 
 - 默认使用显式数据流、普通函数和小模块。

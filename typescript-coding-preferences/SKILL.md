@@ -9,6 +9,8 @@ description: Use when writing, refactoring, or reviewing TypeScript code where s
 
 Follow a TypeScript style that is schema-first at boundaries, function/module-first in flow, data-first in modeling, and deliberately light on object-oriented programming. Treat this as the default project discipline, not a soft aesthetic preference. Use classes as a scoped tool for entities/value objects, not as the architecture default.
 
+This is intentionally Go-like TypeScript: plain data, functions, small interfaces, explicit composition, and classes only when they pay for themselves.
+
 ## Default Stance
 
 - Default to explicit data flow, plain functions, and small modules.
