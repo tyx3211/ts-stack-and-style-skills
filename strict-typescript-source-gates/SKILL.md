@@ -237,6 +237,7 @@ Rules:
 Base-class polymorphism stance:
 
 - Default recommendation: prefer composition plus small `interface` or `type` capability boundaries. This is the project style because it gives clearer assignment gates and avoids inheritance-driven architecture.
+- When `typescript-coding-preferences` is also in effect, treat inheritance as a style violation for new design: write Go-like TypeScript with plain data, functions, small interfaces, and composition; do not introduce inheritance unless a framework/library or existing repository convention requires it.
 - Allowed with justification: an `abstract class` or base class may be used as a polymorphic boundary when it represents a real stable `is-a` relationship, shared invariant, protected state, template method, or framework/library requirement.
 - Still a refactoring candidate: even when a base-class boundary is well disciplined, treat it as acceptable rather than preferred. Under this project's composition-over-inheritance bias, optimize it toward composition plus capability interfaces when the base class stops carrying real invariant or runtime value.
 - Required discipline for base classes: use `override`, do not narrow method parameters, keep subclass contracts at least as wide as the base contract, and narrow inside method bodies when needed.
@@ -350,6 +351,7 @@ Do not trade strictness for speed silently. Any faster path must fail on the sam
 - Are tests and generated code separated from `src/` policy?
 - Are callback-like interfaces using function properties?
 - Are assignable `interface` and `type` boundaries using function properties on the target side?
+- If `typescript-coding-preferences` is active, did new code avoid inheritance for Go-like TypeScript style unless framework/library or repository constraints require it?
 - Are base-class polymorphism boundaries justified by real `is-a`, invariant, protected state, template method, or framework requirements rather than reuse convenience?
 - Are public array inputs readonly by default?
 - Are mutable widened arrays copied instead of aliased?

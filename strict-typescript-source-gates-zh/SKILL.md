@@ -237,6 +237,7 @@ interface Handler<T> {
 基类多态边界态度：
 
 - 默认推荐：优先使用组合，加小型 `interface` 或 `type` capability boundary（能力边界）。这是项目风格，因为它能提供更清晰的赋值门禁，也能避免继承驱动架构。
+- 如果同时启用 `typescript-coding-preferences`，继承在新设计里也应视为风格违规：尽量写 Go 式 TypeScript，也就是 plain data（朴素数据）、函数、小接口和组合；除非框架 / 库或仓库既有约定要求，否则不要引入继承。
 - 允许但要有理由：当 `abstract class`（抽象类）或基类表达真实稳定的 `is-a` 关系、共享 invariant（不变量）、protected state（受保护状态）、template method（模板方法），或者框架 / 库明确要求时，可以作为多态边界。
 - 仍然是优化候选：即使基类边界写得规范，它也只是可接受方案，不是默认偏好。在本项目组合优于继承的偏好下，如果基类不再承载真实不变量或运行时价值，应优化为组合加 capability interface。
 - 基类必须遵守的纪律：使用 `override`，不得缩窄 method 参数，让子类契约至少和基类契约一样宽；需要特殊处理窄类型时，在方法体内部收窄。
@@ -350,6 +351,7 @@ class DerivedHandler extends BaseHandler {
 - tests 和 generated code 是否与 `src/` 政策隔离？
 - callback 类 interface 是否使用 function property？
 - 可赋值的 `interface` 和 `type` 边界是否在目标侧使用 function property？
+- 如果启用了 `typescript-coding-preferences`，新代码是否为了 Go 式 TypeScript 风格避免了继承，除非框架 / 库或仓库约束要求？
 - 基类多态边界是否有真实 `is-a`、不变量、受保护状态、模板方法或框架要求，而不是只为复用方便？
 - 公开数组入参是否默认 readonly？
 - 可变数组扩宽时是否先拷贝，而不是共享别名？
