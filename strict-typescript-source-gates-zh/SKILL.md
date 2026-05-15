@@ -350,12 +350,47 @@ class DerivedHandler extends BaseHandler {
 默认仍然是 full ESLint + cache。如果项目变得很大：
 
 1. 保持 `npm run verify` 的语义稳定。
-2. 增加 `oxlint` 来覆盖快速、非 type-aware 的 lint 类规则。
-3. 保留 `tsgo --noEmit` 或 `tsc --noEmit` 负责类型检查。
-4. 保留 `oxlint` 或编译器无法覆盖的 type-aware ESLint 规则。
+2. 当仓库的 `tsconfig` 已完成迁移时，优先使用来自 `@typescript/native-preview` 的 `tsgo --noEmit` 做 TypeScript 7 native-preview 类型检查。项目暂时不兼容 TS7 时，保留 `tsc --noEmit`。
+3. 使用 `oxlint --type-aware --type-check` 搭配 `oxlint-tsgolint` 作为快速主 lint 和 type diagnostic 路径。它可以覆盖很多高价值 type-aware 规则和 TypeScript compiler diagnostics。
+4. 只为 `oxlint` 当前不能覆盖或语义不能匹配的规则保留 cached ESLint。常见剩余规则是 `@typescript-eslint/method-signature-style: ["error", "property"]`。
 5. 用已知违规样例证明等价：显式 `any`、unsafe assignment、unsafe argument、禁止的断言、method-signature callback、宽松相等、陈旧生成文件。
 
 不要悄悄用速度换严格度。任何更快路径都必须继续拦住 `src/` 中真正重要的政策违规。
+
+对大型仓库使用分层工作流：
+
+- AI agent 日常自检：运行 `oxlint --type-aware --type-check`，运行 cached ESLint fallback rules，并查询当前 `tsgo --watch --noEmit` 状态。即使在中大型 TypeScript 仓库里，这也应保持默认，因为很小的 cached ESLint fallback 通常足够快。
+- `pre-commit`：运行 formatting、full 或 scoped `oxlint`、cached ESLint fallback rules，以及 `tsgo` watch 状态；没有 watch 时直接运行 `tsgo --noEmit`。
+- `pre-push` 和 CI：运行完整共享 `npm run verify`，包括 codegen 检查、lint、typecheck、tests 和 build。
+
+不允许 AI agent 单方面把 cached ESLint fallback rules 从日常自检中移除。只有人类开发者明确说检查太慢，或要求优化流程时，才讨论这个优化。此时可以询问或提出小的、可衡量的调整，例如把 fallback 移到 `pre-commit`/`pre-push`，但在人工接受 tradeoff 前保持更严格默认。AI 迭代时，全源码反馈通常比 changed-file-only lint 更好。
+
+不要把第三方仓库扫描结果直接当成 bug，除非规则集匹配该仓库政策。缺依赖、项目风格冲突（例如 Chai `no-unused-expressions`）是工具链发现，不是自动 correctness bug。有效迁移发现包括 `tsgo` 报出的 TS7 错误，例如已移除的 `tsconfig` 选项。
+
+推荐 TS7/Oxlint 项目 scripts：
+
+```json
+{
+  "scripts": {
+    "lint:ox": "oxlint src --type-aware --type-check --max-warnings=0",
+    "lint": "eslint \"src/**/*.{ts,tsx}\" --cache --cache-location .cache/eslint --max-warnings=0",
+    "typecheck": "tsgo --noEmit",
+    "verify": "npm run lint:ox && npm run lint && npm run typecheck && npm run test && npm run build:artifact"
+  }
+}
+```
+
+当 `lint` 只为 `method-signature-style` 存在时，保持 ESLint config 足够小，不要重复跑完整 type-aware ESLint stack。
+
+Windows 友好的 `tsgo --watch --noEmit` 状态脚本可以让 AI agent 保持快速，不必管理交互终端。优先使用 wrapper：
+
+- 后台启动 `node_modules/@typescript/native-preview/bin/tsgo.js --noEmit --watch --pretty false`；
+- 输出重定向到 `.cache/tsgo-watch.log`；
+- wrapper PID 写入 `.cache/tsgo-watch.pid`；
+- `status` 打印最新 `Found 0 errors` summary 和最近 `error TSxxxx` diagnostics；
+- Windows 下 `stop` 使用 `taskkill /PID <pid> /T /F`。
+
+关键命令是 `tsgo --watch --noEmit`；watch mode 不代表 `noEmit`。除非 `tsconfig` 已保证 `noEmit`，否则显式传 `--noEmit`。
 
 ## Review 清单
 
