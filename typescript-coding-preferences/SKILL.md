@@ -99,6 +99,10 @@ Load `backend-data-correctness` when editing repositories, Drizzle/Kysely querie
 
 Load [references/lint-hooks-type-safety.md](references/lint-hooks-type-safety.md) when changing ESLint, hooks, CI gates, generated-code linting, `any`/`unknown`, assertions, type guards, schema parsing, equality checks, or numeric validation. For hard `src/` gates, also load `strict-typescript-source-gates`.
 
+## Typecheck Performance Preference
+
+For medium-to-large TypeScript repositories, local self-checks should default to full-project `tsgo --noEmit --pretty false`. This is usually fast and stable enough, and it avoids relying on possibly stale watch state. If the human developer says the time is unacceptable and explicitly asks for more speed, prefer a fully cached incremental command such as `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`; generally do not choose watch mode as the performance path.
+
 ## Performance And Shape Discipline
 
 - Do not attach function properties to every object in a large collection.

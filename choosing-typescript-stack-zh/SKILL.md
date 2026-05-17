@@ -37,6 +37,10 @@ description: Use when choosing or comparing TypeScript project stacks, front-end
 
 当选择 PostgreSQL、Drizzle、Kysely、Redis、cache（缓存）、queue（队列）、idempotency（幂等）或后端数据访问模式时，也要加载 `backend-data-correctness-zh`。
 
+## 类型检查性能偏好
+
+对中大型 TypeScript 项目，技术栈选择时默认偏向能直接运行全量 `tsgo --noEmit --pretty false` 的工具链。这个路径通常已经够快、够稳，适合作为本地自检默认值。如果后续人类开发者明确表示耗时不可接受，并要求继续加速，优先考虑全缓存 incremental（增量）命令，例如 `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`；一般不要把 watch mode（监听模式）作为默认性能策略。
+
 ## 后端选择
 
 - 当我们需要运行时可移植性、轻量 HTTP 外壳、低框架魔法、edge / serverless 适配性，以及未来迁移空间时，选择 Hono。它是运行时中立 API 服务的稳定轻量默认项。

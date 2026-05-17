@@ -37,6 +37,10 @@ Use these defaults unless the project has a documented reason to deviate:
 
 When selecting PostgreSQL, Drizzle, Kysely, Redis, cache, queue, idempotency, or backend data-access patterns, also load `backend-data-correctness`.
 
+## Typecheck Performance Preference
+
+For medium-to-large TypeScript projects, choose a toolchain that can run full-project `tsgo --noEmit --pretty false` by default. This is usually fast and stable enough for local self-checks. If a human developer later says the time is unacceptable and asks for more speed, prefer a fully cached incremental command such as `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`; generally do not make watch mode the default performance strategy.
+
 ## Backend Choices
 
 - Choose Hono when portability, thin HTTP shell, low framework magic, edge/serverless, and future migration matter. This is the stable lightweight default for runtime-neutral API services.

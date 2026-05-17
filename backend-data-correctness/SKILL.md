@@ -314,6 +314,10 @@ When using Drizzle, enable Drizzle ESLint rules where available:
 
 If the plugin cannot be used, enforce the same policy with review, tests, or local lint rules.
 
+## Typecheck Performance Preference
+
+For medium-to-large TypeScript repositories, default to full-project `tsgo --noEmit --pretty false` for local typecheck self-checks. This is usually fast and stable enough. If the human developer says the time is unacceptable and explicitly asks for more speed, prefer a fully cached incremental command such as `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`; generally avoid treating watch mode as the performance path.
+
 ## Review Checklist
 
 - Does every write usecase declare a concurrency strategy?

@@ -350,7 +350,7 @@ Rare exception: if a concrete class must be protected from structural class-to-c
 Default remains full ESLint plus cache. If the project becomes too large:
 
 1. Keep `npm run verify` semantics stable.
-2. Prefer `tsgo --noEmit` from `@typescript/native-preview` for TypeScript 7 native-preview type checking when the repository has migrated its `tsconfig` options. Keep `tsc --noEmit` only when the project is not TS7-compatible yet.
+2. For medium-to-large repositories, default to full-project `tsgo --noEmit --pretty false` from `@typescript/native-preview` when the repository has migrated its `tsconfig` options. This is usually fast and stable enough, including for large source edits. Keep `tsc --noEmit` only when the project is not TS7-compatible yet.
 3. Add `oxlint --type-aware --type-check` with `oxlint-tsgolint` as the fast primary lint/type diagnostic path. This can cover most high-value type-aware rules and TypeScript compiler diagnostics.
 4. Keep cached ESLint only for rules that `oxlint` does not currently cover or cannot match semantically. A common remaining rule is `@typescript-eslint/method-signature-style: ["error", "property"]`.
 5. Prove parity by intentionally testing known violations: explicit `any`, unsafe assignment, unsafe argument, forbidden assertion, method-signature callback, loose equality, and stale generated files.
@@ -359,8 +359,9 @@ Do not trade strictness for speed silently. Any faster path must fail on the sam
 
 For large repositories, use a tiered workflow:
 
-- AI-agent self-check during ordinary edits: run `oxlint --type-aware --type-check`, run the cached ESLint fallback rules, and query the current `tsgo --watch --noEmit` status. This should stay the default even for moderately large TypeScript repositories because a tiny cached ESLint fallback is usually fast enough.
-- `pre-commit`: run formatting, full or scoped `oxlint`, cached ESLint fallback rules, and the `tsgo` watch status or a direct `tsgo --noEmit` when no watch is running.
+- AI-agent self-check during ordinary edits: run `oxlint --type-aware --type-check`, run the cached ESLint fallback rules, and run full-project `tsgo --noEmit --pretty false`. This should stay the default even for medium-to-large TypeScript repositories because full-project `tsgo` is usually fast enough and easier to trust than watch state.
+- If full-project `tsgo` becomes genuinely unacceptable and the human developer explicitly asks for more speed, first try a fully cached incremental check such as `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`. Measure it against full-project `tsgo` after representative leaf, central-component, and mixed edits; do not assume incremental wins for central or large patches.
+- `pre-commit`: run formatting, full or scoped `oxlint`, cached ESLint fallback rules, and direct `tsgo --noEmit --pretty false` unless the repository has deliberately adopted a measured incremental command.
 - `pre-push` and CI: run the full shared `npm run verify`, including codegen checks, lint, typecheck, tests, and build.
 
 Do not let an AI agent unilaterally move cached ESLint fallback rules out of routine self-checks. Only discuss this optimization when a human developer says the checks are too slow or asks to optimize the workflow. In that case, ask or propose a small measured change, such as moving the fallback to `pre-commit`/`pre-push`, but keep the stricter default until the human accepts the tradeoff. Full-source feedback is usually better than changed-file-only lint during AI iteration.
@@ -374,7 +375,7 @@ Recommended package scripts for a TS7/Oxlint project:
   "scripts": {
     "lint:ox": "oxlint src --type-aware --type-check --max-warnings=0",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --cache --cache-location .cache/eslint --max-warnings=0",
-    "typecheck": "tsgo --noEmit",
+    "typecheck": "tsgo --noEmit --pretty false",
     "verify": "npm run lint:ox && npm run lint && npm run typecheck && npm run test && npm run build:artifact"
   }
 }
@@ -382,7 +383,7 @@ Recommended package scripts for a TS7/Oxlint project:
 
 When `lint` exists only for `method-signature-style`, keep the ESLint config intentionally tiny instead of running a duplicate full type-aware ESLint stack.
 
-Windows-friendly `tsgo --watch --noEmit` status scripts can keep an AI agent fast without forcing it to manage an interactive terminal. Prefer a wrapper that:
+Watch mode is not the default performance path. A Windows-friendly `tsgo --watch --noEmit` status script can still be useful as an optional background status source when a repository has measured it and deliberately wants it. In that case, prefer a wrapper that:
 
 - starts `node_modules/@typescript/native-preview/bin/tsgo.js --noEmit --watch --pretty false` in the background;
 - redirects output to `.cache/tsgo-watch.log`;
@@ -390,7 +391,7 @@ Windows-friendly `tsgo --watch --noEmit` status scripts can keep an AI agent fas
 - provides `status` to print the latest `Found 0 errors` summary and recent `error TSxxxx` diagnostics;
 - provides `stop` using `taskkill /PID <pid> /T /F` on Windows.
 
-The important command is `tsgo --watch --noEmit`; watch mode does not imply `noEmit`. Pass `--noEmit` explicitly unless `noEmit` is guaranteed in `tsconfig`.
+The important watch command is `tsgo --watch --noEmit`; watch mode does not imply `noEmit`. Pass `--noEmit` explicitly unless `noEmit` is guaranteed in `tsconfig`.
 
 ## Review Checklist
 
