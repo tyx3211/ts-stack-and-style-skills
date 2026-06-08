@@ -47,6 +47,7 @@ description: Use when writing, refactoring, or reviewing TypeScript code with Ch
 - 把数据接口与能力接口分开。`UserData` 不应该被迫满足 `UserService`。
 - 当字面量既要接受接口检查，又要保留精确推导类型时，使用 `satisfies`。
 - 对 callback 类能力形状，使用 function property（函数属性），不要写 method signature（方法签名），除非框架明确要求 method 语法。
+- 这条规则只针对可赋值的类型边界，不是实现代码风格要求。不要仅仅因为这条边界规则，就把普通 function declaration（函数声明）、局部 helper、对象方法或 class prototype method（类原型方法）改成箭头函数 / 函数属性。
 - 除非领域关系真的是稳定的 `is-a`，或者框架 / 库明确要求，否则不要用 `class extends` 做复用。
 
 ## Class 规则
@@ -67,7 +68,7 @@ class 方法应保持轻薄且内禀。持久化、编排、授权、格式化�
 ## 函数与闭包
 
 - 可复用逻辑使用普通辅助函数。
-- 局部回调和局部 helper closure（辅助闭包）是可以接受的，只要它们不会远离作用域长期逃逸。
+- 局部回调和局部 helper closure（辅助闭包）是可以接受的，只要它们不会远离作用域长期逃逸；这是框架习惯或可读性选择，不是双变安全要求。
 - factory closure（工厂闭包）只在依赖装配场景中适度使用，例如 `makeUserHandlers(deps)`。
 - 避免层层柯里化 API、长期逃逸闭包，以及用闭包 DSL（领域特定写法）隐藏状态与控制流。
 - 在 UI 代码中，React hooks 和 Vue Composition API 的闭包是框架语义，应按框架习惯写；但不要在此之上再搭私有闭包小框架。

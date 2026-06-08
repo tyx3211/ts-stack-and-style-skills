@@ -188,7 +188,7 @@ If the stock ESLint rule set cannot express "allow `as const`, reject other asse
 
 TypeScript keeps some unsound behavior for JavaScript compatibility. `strictFunctionTypes` helps, but method and constructor declarations still preserve historical bivariance holes. TypeScript 6.0.3 still allows class-to-class structural assignment with prototype methods in cases that can crash at runtime. Project code must close those holes by style, lint rules, and review gates.
 
-Use function properties for callback-like capabilities:
+Use function properties for callback-like capabilities at assignable type boundaries:
 
 ```ts
 type Handler<T> = {
@@ -214,7 +214,7 @@ class DogHandler implements Handler<Dog> {
 }
 ```
 
-Do not rewrite ordinary class methods into arrow/function fields just to satisfy the boundary rule. Class function fields are per-instance functions, not prototype methods, and should be reserved for callback fields that need stable `this` binding.
+Do not rewrite ordinary implementation functions into arrow/function properties just to satisfy the boundary rule. Plain function declarations, local helpers, object methods, and class prototype methods remain idiomatic. Class function fields are per-instance functions, not prototype methods, and should be reserved for callback fields that need stable `this` binding.
 
 Assignment target rule: with `strictFunctionTypes: true`, the decisive factor is the target member shape, not whether the outer type is a `class`, `interface`, or `type`. If the assignment target says `handle: (value: T) => void`, TypeScript applies the stricter function-parameter check. If the assignment target says `handle(value: T): void`, the historical method bivariance hole can remain even when the source member is an arrow/function property. This is why assignable `interface` and `type` boundaries must be linted into function-property form.
 

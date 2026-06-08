@@ -47,6 +47,7 @@ Load [references/object-modeling.md](references/object-modeling.md) when choosin
 - Keep data interfaces separate from capability interfaces. A `UserData` instance should not have to satisfy `UserService`.
 - Use `satisfies` when a literal should be checked against an interface while preserving its precise inferred type.
 - For callback-like capability shapes, use function properties instead of method signatures unless a framework requires method syntax.
+- This rule is about assignable type boundaries, not implementation style. Do not rewrite ordinary function declarations, local helpers, object methods, or class prototype methods into arrow/function properties just because this boundary rule exists.
 - Do not use `class extends` for reuse unless the domain really has a stable `is-a` relationship or a framework/library requires it.
 
 ## Class Rules
@@ -67,7 +68,7 @@ Do not introduce class-based controllers, decorators, DI containers, or framewor
 ## Functions And Closures
 
 - Use plain helper functions for reusable logic.
-- Local callbacks and local helper closures are fine when they do not escape far from their scope.
+- Local callbacks and local helper closures are fine when they do not escape far from their scope; they are a framework or readability choice, not a variance-safety requirement.
 - Use factory closures sparingly for dependency assembly, for example `makeUserHandlers(deps)`.
 - Avoid deeply curried APIs, long-lived escaped closures, and framework-like closure DSLs that hide state and control flow.
 - In UI code, React hooks and Vue Composition API closures are framework semantics; follow the framework, but do not build extra private closure frameworks around it.

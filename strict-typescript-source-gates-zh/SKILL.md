@@ -188,7 +188,7 @@ export default [
 
 TypeScript 为了 JavaScript 兼容保留了一些 unsound（类型系统不完全可靠）行为。`strictFunctionTypes` 能收紧一部分问题，但 method declaration（方法声明）和 constructor declaration（构造器声明）仍保留历史双变口子。已经验证到 TypeScript 6.0.3 里，class-to-class structural assignment（具体 class 之间的结构化赋值）配合 prototype method（原型方法）仍可能通过类型检查，然后在运行时报错。项目代码必须通过写法、lint 规则和 review 门禁主动收口。
 
-callback 类能力使用 function property（函数属性）：
+callback 类能力在可赋值类型边界上使用 function property（函数属性）：
 
 ```ts
 type Handler<T> = {
@@ -214,7 +214,7 @@ class DogHandler implements Handler<Dog> {
 }
 ```
 
-不要为了满足边界规则，就把普通 class method（类方法）改成 arrow/function field（箭头函数字段 / 函数字段）。class 函数字段是每个实例一份的函数，不是 prototype method；只有在 callback 字段确实需要稳定 `this` 绑定时才使用。
+不要为了满足边界规则，就把普通实现函数改成 arrow/function property（箭头函数 / 函数属性）。普通 function declaration（函数声明）、局部 helper、对象方法和 class prototype method（类原型方法）仍然是惯用写法。class 函数字段是每个实例一份的函数，不是 prototype method；只有在 callback 字段确实需要稳定 `this` 绑定时才使用。
 
 赋值目标侧规则：在 `strictFunctionTypes: true` 下，决定检查强度的关键不是外层是 `class`、`interface` 还是 `type`，而是被赋值方的成员形状。目标侧写成 `handle: (value: T) => void`，TypeScript 会使用更严格的函数参数检查。目标侧写成 `handle(value: T): void`，即使来源侧是 arrow/function property（箭头函数 / 函数属性），历史 method bivariance（方法双变）口子仍可能保留。因此，可能作为赋值目标的 `interface` 和 `type` 边界必须被 lint 成 function property 形式。
 
