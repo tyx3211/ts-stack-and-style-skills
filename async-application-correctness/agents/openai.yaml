@@ -1,0 +1,4 @@
+interface:
+  display_name: "Async Application Correctness"
+  short_description: "Review async commands, processes, and side effects"
+  default_prompt: "Use $async-application-correctness to review this application's async command, process, and side-effect correctness."

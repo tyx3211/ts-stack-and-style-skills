@@ -1,6 +1,6 @@
 ---
 name: choosing-typescript-stack-zh
-description: Use when choosing or comparing TypeScript project stacks, front-end frameworks, back-end frameworks, API contracts, schema libraries, databases, auth, queues, testing, observability, monorepo layout, or React/Vue/Hono/Elysia/Fastify/NestJS tradeoffs in Chinese workflow contexts.
+description: Use when choosing or comparing TypeScript project stacks, front-end frameworks, back-end frameworks, API contracts, schema libraries, databases, auth, queues, testing, observability, monorepo shape, or framework tradeoffs in Chinese workflows. Use the monorepo-toolchain skill for implementation details.
 ---
 
 # TypeScript 技术选型
@@ -37,9 +37,9 @@ description: Use when choosing or comparing TypeScript project stacks, front-end
 
 当选择 PostgreSQL、Drizzle、Kysely、Redis、cache（缓存）、queue（队列）、idempotency（幂等）或后端数据访问模式时，也要加载 `backend-data-correctness-zh`。
 
-## 类型检查性能偏好
+## 编译器兼容性偏好
 
-对中大型 TypeScript 项目，技术栈选择时默认偏向能直接运行全量 `tsgo --noEmit --pretty false` 的工具链。这个路径通常已经够快、够稳，适合作为本地自检默认值。如果后续人类开发者明确表示耗时不可接受，并要求继续加速，优先考虑全缓存 incremental（增量）命令，例如 `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`；一般不要把 watch mode（监听模式）作为默认性能策略。
+锁定仓库 compiler，并暴露稳定 `typecheck` script。TypeScript 7 提供标准 `tsc` command；不要继续保留旧 `@typescript/native-preview` 或 `tsgo`。TS7 没有 programmatic API 期间，typescript-eslint、AST tool、Vue/Svelte/Astro/MDX 和部分 Angular workflow 需要显式 TypeScript 6 compatibility API。官方 side-by-side alias 布局可把 TS7 安装为 `@typescript/native`，同时让名为 `typescript` 的 package 提供 TS6 API；必须实际验证每个 command 解析到的 binary/API，不能从 package name 猜。
 
 ## 后端选择
 
@@ -80,7 +80,7 @@ description: Use when choosing or comparing TypeScript project stacks, front-end
 - 数据库实体与 API 返回对象保持分离。
 - CPU 密集型任务交给 worker，长时 / 后台任务交给队列或工作流系统。
 
-当我们要创建新的 monorepo，或者想把架构规则写进 `AGENTS.md` / 仓库文档时，请读取 [references/project-structure.md](references/project-structure.md)。
+当我们要选择高层仓库形态，或者想把架构规则写进 `AGENTS.md` / 仓库文档时，请读取 [references/project-structure.md](references/project-structure.md)。当实现 workspace package 边界、project references、`exports` / `imports`、构建流水线、声明文件、任务缓存或 package 发布时，还要加载 `typescript-monorepo-toolchain-zh`。
 
 ## 反默认项
 

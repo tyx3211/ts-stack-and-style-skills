@@ -1,0 +1,4 @@
+interface:
+  display_name: "Postgres Redis Cache Consistency"
+  short_description: "Versioned cache, outbox, and fencing correctness"
+  default_prompt: "Use $postgres-redis-cache-consistency to design or review a PostgreSQL-backed Redis cache consistency protocol."

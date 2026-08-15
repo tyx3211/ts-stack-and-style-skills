@@ -17,8 +17,8 @@
 
 ```ts
 interface PriceLike {
-  isZero(): boolean;
-  add(delta: number): Price;
+  isZero: () => boolean;
+  add: (delta: number) => Price;
 }
 
 export class Price implements PriceLike {
@@ -47,7 +47,7 @@ export interface UserData {
 }
 
 export interface UserService {
-  rename(user: UserData, newName: string): UserData;
+  rename: (user: UserData, newName: string) => UserData;
 }
 ```
 
@@ -69,8 +69,8 @@ export interface User {
 
 ```ts
 interface UserOperations {
-  rename(user: UserData, newName: string): UserData;
-  displayName(user: UserData): string;
+  rename: (user: UserData, newName: string) => UserData;
+  displayName: (user: UserData) => string;
 }
 
 export const UserOps = {

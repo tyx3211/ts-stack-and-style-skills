@@ -27,10 +27,21 @@ infra:
 Hono route 代码应保持轻薄：
 
 ```ts
-const app = new Hono();
+import { RPCHandler } from "@orpc/server/fetch";
 
-app.route("/rpc", createORPCHonoHandler({ router, context: buildContext }));
+const handler = new RPCHandler(router);
+
+app.use("/rpc/*", async (context, next) => {
+  const { matched, response } = await handler.handle(context.req.raw, {
+    prefix: "/rpc",
+    context: await buildContext(context),
+  });
+  if (matched) return context.newResponse(response.body, response);
+  await next();
+});
 ```
+
+这遵循当前[官方 oRPC Hono adapter](https://orpc.dev/docs/adapters/hono)。必须按仓库锁定的 oRPC version 验证示例；adapter glue 是建议基线，不是永恒 API 或强制本地抽象。
 
 实现代码应依赖 contracts 与依赖对象，而不是依赖 `Hono.Context`：
 

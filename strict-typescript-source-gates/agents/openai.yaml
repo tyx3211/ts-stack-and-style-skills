@@ -1,4 +1,4 @@
 interface:
   display_name: "Strict TypeScript Source Gates"
-  short_description: "Strict src-level TypeScript, ESLint, hook, CI, assertion, and variance-safety gates"
-  default_prompt: "Use $strict-typescript-source-gates when defining or reviewing strict TypeScript source gates."
+  short_description: "Strict TypeScript source and escape-hatch gates"
+  default_prompt: "Use $strict-typescript-source-gates to write or review strict TypeScript and audit its trusted type boundaries."

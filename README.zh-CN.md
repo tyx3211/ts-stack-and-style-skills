@@ -2,110 +2,65 @@
 
 [English](README.md) | 中文
 
-这是一个面向 Codex 优先使用场景的开源 skill 仓库，聚焦于 TypeScript 技术选型与 TypeScript 编码风格约束。
+这是一个 Codex 优先、英中双语的 TypeScript skill 仓库，覆盖技术栈选型、源码设计、仓库工具链、应用安全、异步控制流以及 PostgreSQL/Redis 正确性。
 
-本仓库一共提供 8 个完整 skill：
+仓库包含 8 个可独立安装的英文 skill 和 8 个中文镜像，共 16 个 skill 目录：
 
-- `choosing-typescript-stack`
-- `typescript-coding-preferences`
-- `strict-typescript-source-gates`
-- `backend-data-correctness`
-- `choosing-typescript-stack-zh`
-- `typescript-coding-preferences-zh`
-- `strict-typescript-source-gates-zh`
-- `backend-data-correctness-zh`
+- `choosing-typescript-stack{,-zh}`
+- `typescript-coding-preferences{,-zh}`
+- `strict-typescript-source-gates{,-zh}`
+- `backend-data-correctness{,-zh}`
+- `typescript-monorepo-toolchain{,-zh}`
+- `postgres-redis-cache-consistency{,-zh}`
+- `async-application-correctness{,-zh}`
+- `typescript-security-boundaries{,-zh}`
 
-每个 skill 都包含自己的 `SKILL.md` 和 `agents/openai.yaml`，并在需要额外参考资料时包含 `references/`。因此我们提供的是可直接复现的完整 skill 包，而不是只复制顶层 markdown 的精简版本。
+## 职责分层
 
-## 优先支持 Codex
+- **技术栈选型**：选择框架、运行时、契约、存储、队列和项目形态。
+- **编码偏好**：管理普通 TypeScript 建模、边界、组合方式和局部实现风格。
+- **源码门禁**：把已选定的源码政策落实为 tsconfig、lint、hook 和 CI 规则。
+- **后端数据正确性**：管理 PostgreSQL 事务、不变量、幂等、outbox、worker 与 Redis 的一般边界。
+- **Monorepo 工具链**：管理 workspace、包依赖图、project references、exports、声明产物、任务缓存和发布/构建边界。
+- **PostgreSQL/Redis 缓存一致性**：聚焦跨存储 cache-aside 顺序、失效、所有权、恢复和一致性审查。
+- **异步应用正确性**：管理 Promise 控制流、取消、任务所有权、状态机和应用级并发边界。
+- **安全边界**：管理浏览器、HTTP、认证、文件、URL 与 Electron 的信任边界，并区分静态发现和威胁模型假设。
 
-本仓库的目录组织方式首先面向 Codex 的本地 skill 安装路径。
+每个 skill 都是自包含 bundle，包括 `SKILL.md`、`agents/openai.yaml` 和可选的 `references/` 或 `scripts/`。英文版与中文版刻意保持为独立目录，任何一方都可以单独安装，不依赖另一方的文件。
 
-- 首要目标环境：Codex，本地 skill 目录通常为 `~/.codex/skills/`
-- 采用的结构：`skill-name/SKILL.md`，并可带 `references/`、`agents/`
-- 次级兼容目标：其他支持同类 skill 目录结构的代理环境
+## 仓库验证
 
-## 仓库内包含的 Skill
-
-### `choosing-typescript-stack`
-
-用于 TypeScript 项目的技术选型与对比，包括前端框架、后端框架、API 契约方式、运行时 schema（运行时校验结构）、数据库、认证、队列、测试、可观测性与 monorepo（单仓多包）结构等。
-
-### `typescript-coding-preferences`
-
-用于 TypeScript 代码的编写、重构与审查，核心偏好是：边界以 schema（运行时校验结构）为先、流程以函数和模块为先、建模以数据为先，并尽量避免沉重的 Java / Spring 风格分层。
-
-### `strict-typescript-source-gates`
-
-用于定义或审查严格的 `src/` TypeScript 门禁，包括 tsconfig、ESLint、npm scripts、hooks、CI、断言策略和双变安全写法。
-
-### `backend-data-correctness`
-
-用于实现或审查 TypeScript 后端数据访问，包括 PostgreSQL、Drizzle、Kysely、Redis、cache adapter（缓存适配器）、事务、并发控制、幂等、outbox（事务外发箱）、迁移、队列与 Hono/oRPC 仓储边界。
-
-### `choosing-typescript-stack-zh`
-
-技术选型 skill 的中文版，包含配套 references（参考文档）的中文版。
-
-### `typescript-coding-preferences-zh`
-
-编码偏好 skill 的中文版，包含配套 references（参考文档）的中文版。
-
-### `strict-typescript-source-gates-zh`
-
-严格 TypeScript 源码门禁 skill 的中文版。
-
-### `backend-data-correctness-zh`
-
-后端数据正确性 skill 的中文版。
-
-## 仓库结构
-
-```txt
-ts-stack-and-style-skills/
-  README.md
-  README.zh-CN.md
-  LICENSE
-  .gitignore
-  choosing-typescript-stack/
-  typescript-coding-preferences/
-  strict-typescript-source-gates/
-  backend-data-correctness/
-  choosing-typescript-stack-zh/
-  typescript-coding-preferences-zh/
-  strict-typescript-source-gates-zh/
-  backend-data-correctness-zh/
-```
-
-## 安装方式
-
-### Codex
-
-把需要的 skill 目录复制到本地 Codex skill 目录中：
+使用支持 ESM 的 Node.js，并安装锁定的开发依赖。仓库并列安装推荐的 TypeScript 7 CLI 与 TypeScript 6 compatibility CLI/API；AST 逃生舱审计绝不 fallback 到 global compiler：
 
 ```bash
-mkdir -p ~/.codex/skills
-cp -r choosing-typescript-stack ~/.codex/skills/
-cp -r typescript-coding-preferences ~/.codex/skills/
-cp -r strict-typescript-source-gates ~/.codex/skills/
-cp -r backend-data-correctness ~/.codex/skills/
-cp -r choosing-typescript-stack-zh ~/.codex/skills/
-cp -r typescript-coding-preferences-zh ~/.codex/skills/
-cp -r strict-typescript-source-gates-zh ~/.codex/skills/
-cp -r backend-data-correctness-zh ~/.codex/skills/
+npm install
+npm run validate
 ```
 
-复制完成后，就可以在 Codex 中按名称引用这些 skill，或者在触发条件匹配时让系统加载它们。
+结构验证器会动态扫描所有包含 `SKILL.md` 的顶层目录，并检查：
 
-### 其他代理环境
+- skill 与元数据文件可按 UTF-8 读取；
+- Markdown code fence 成对闭合，且本地 Markdown 链接目标存在；
+- frontmatter 只能包含 `name` 和 `description`，且 `name` 与目录名一致；
+- `SKILL.md` 不超过 500 行；
+- `references/` 链接存在，且最多只有一层；
+- `agents/openai.yaml` 包含加引号的 display、short-description 和 default-prompt 字段；
+- short description 长度为 25–64 个字符，default prompt 包含 `$skill-name`；
+- 每个英文/中文 skill 对都存在、具有镜像文件结构，且每个 Markdown 文件的 fenced-code-block 数量一致。
 
-如果其他代理环境支持 `SKILL.md` 风格的 skill 包，也可以直接复制同样的目录结构过去。需要注意的是，skill 内部的相对路径依赖 `references/` 和 `agents/` 的原始层级，因此不要随意改动目录结构。
+路由 fixture 验证器要求每个动态发现的英文 skill 都有英文和中文的正例与负例 prompt，并有一条记录 companion skill 与 reference 预期的混合 prompt：
 
-## 说明
+```bash
+npm run validate:routing
+```
 
-- 英文版 skill 保留原始结构，并对元数据做了轻量整理。
-- 中文版 skill 不只翻译主文档，也翻译了所有被引用的参考文档。
-- 每个 skill 内部的相对引用都保持可用，便于直接复制安装。
+完整验证会先证明项目本地 `tsc` 是 TypeScript 7.0.x、`tsc6` 与可嵌入的 `typescript` API 是 TypeScript 6.0.x，且没有借用 global installation；随后运行两份 TypeScript 逃生舱 inventory script 的正反 fixture，并报告 parser version。可分别用 `npm run validate:toolchain` 与 `npm run validate:type-escape-harness` 单独运行。
+
+这些检查只验证结构和已记录的路由覆盖。它们不能证明 skill 一定会正确触发、英中翻译语义等价，也不能证明技术、安全、并发或架构建议正确；这些仍然需要前向测试与人工审计。
+
+## 安装
+
+把需要的 skill 目录复制到 Codex 本地 skill 目录（通常为 `~/.codex/skills/`），并保持每个目录内部路径不变。根目录的 `scripts/` 不是可安装 skill，不要复制过去。
 
 ## 许可证
 

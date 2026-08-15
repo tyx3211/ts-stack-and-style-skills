@@ -1,0 +1,4 @@
+interface:
+  display_name: "Postgres Redis 缓存一致性"
+  short_description: "版本缓存、Outbox 与 fencing 正确性"
+  default_prompt: "使用 $postgres-redis-cache-consistency-zh 设计或审查 PostgreSQL 真源下的 Redis 缓存一致性协议。"

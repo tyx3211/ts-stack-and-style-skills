@@ -212,6 +212,8 @@ Redis 正确性不是 PostgreSQL 正确性。Redis 单命令可以是原子的�
 - Redis client（Redis 客户端）必须统一创建并跨请求复用，同时明确 error event（错误事件）、重连、超时和 offline queue（离线队列）策略，并通过应用的 shutdown path（关闭路径）释放。不得每个请求创建一个 Redis client。
 - Redis 数据丢失、过期、被驱逐或持久化缺口必须有恢复路径；不要把 Redis durability（持久性）当作 PostgreSQL durability。
 
+涉及版本化 projection、read-your-write fence、旧 miss-fill 回填竞态、缓存失效 outbox、会话撤销，或 PostgreSQL / Redis 对账时，还要加载 `postgres-redis-cache-consistency-zh`。版本比较只能阻止状态倒退；它本身不能证明缓存已包含事实源最新提交。
+
 Cache adapter 形状：
 
 ```ts
@@ -276,6 +278,8 @@ Redis Cluster 下，任何多 key 原子逻辑都必须声明 cluster 兼容性�
 
 ## 副作用、幂等与迁移
 
+如果正确性还依赖进程内 command queue、Electron / CLI 进程所有权、SQLite 加文件或设备、取消、关闭或崩溃恢复，还要加载 `async-application-correctness-zh`。队列可以排列尝试顺序；持久正确性仍由事务、幂等记录、outbox 或对账状态负责。
+
 - 外部副作用应使用 outbox、after-commit hook（提交后钩子）或已提交 job row。不得在数据库事务内调用外部服务。
 - 数据库提交前，不得把 Redis cache（缓存）写成最终状态。数据库成功提交后，应 invalidate / delete（失效 / 删除）受影响的 cache key，或者写入 outbox / job row 去执行失效。
 - 会修改数据的 usecase 必须声明受影响的 cache key，或者说明不需要缓存失效的理由。
@@ -313,10 +317,6 @@ Redis Cluster 下，任何多 key 原子逻辑都必须声明 cluster 兼容性�
 ```
 
 如果当前无法使用插件，应通过 review、测试或本地 lint 规则执行同等政策。
-
-## 类型检查性能偏好
-
-对中大型 TypeScript 仓库，本地类型检查自检默认使用全量 `tsgo --noEmit --pretty false`。它通常已经够快、够稳。如果人类开发者明确表示耗时不可接受，并要求继续加速，优先考虑全缓存 incremental（增量）命令，例如 `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`；一般不要把 watch mode（监听模式）当成性能路径。
 
 ## Review 清单
 

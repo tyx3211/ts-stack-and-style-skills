@@ -1,0 +1,17 @@
+{
+  "name": "ts-stack-and-style-skills",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@typescript/native": "npm:typescript@7.0.2",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  },
+  "scripts": {
+    "validate": "node scripts/validate-all.mjs && npm run validate:toolchain && npm run validate:type-escape-harness",
+    "validate:skills": "node scripts/validate-skills.mjs",
+    "validate:routing": "node scripts/validate-trigger-routing.mjs",
+    "validate:toolchain": "node scripts/validate-toolchain.mjs",
+    "validate:type-escape-harness": "node strict-typescript-source-gates/scripts/test-audit-type-escapes.mjs && node strict-typescript-source-gates-zh/scripts/test-audit-type-escapes.mjs"
+  }
+}

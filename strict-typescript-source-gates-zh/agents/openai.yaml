@@ -1,4 +1,4 @@
 interface:
   display_name: "严格 TypeScript 源码门禁（中文）"
-  short_description: "src 源码级 TypeScript、ESLint、hook、CI、断言与双变安全硬门禁"
-  default_prompt: "Use $strict-typescript-source-gates-zh when defining or reviewing strict TypeScript source gates in Chinese."
+  short_description: "严格 TypeScript 源码、类型逃生舱、可信边界与发版审计门禁"
+  default_prompt: "Use $strict-typescript-source-gates-zh to write or review strict TypeScript and audit trusted type boundaries in Chinese."

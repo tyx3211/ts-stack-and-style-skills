@@ -9,7 +9,7 @@
 | API contract（API 契约） | oRPC contract-first + OpenAPI | 轻量内部调用可用 Hono RPC，内部全栈 monorepo 可用 tRPC |
 | Schema | Valibot 或 Zod | 高级类型表达可用 ArkType，effect（副作用）较重领域可用 Effect Schema |
 | Database（数据库） | PostgreSQL + Drizzle | SQL 很重时可用 Kysely，团队偏 CRUD 开发体验时可用 Prisma |
-| Auth（认证） | Better Auth | 只有在项目确有需要时才考虑 Auth.js / Lucia / 自定义 JWT |
+| Auth（认证） | Better Auth | 只有在项目确有需要时才考虑 Auth.js、托管 OIDC 或经过明确设计的自建 session 层；新项目不要采用已经弃用的 Lucia v3 库 |
 | Redis | node-redis / ioredis 适配层 | serverless 或特殊运行时约束下可用 Upstash Redis |
 | Queue（队列） | pg-boss | BullMQ、Temporal |
 | Testing（测试） | Vitest + Playwright + contract tests | 纯 Bun 且团队接受时可用 Bun test |

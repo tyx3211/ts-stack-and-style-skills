@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript Security Boundaries"
+  short_description: "Audit TypeScript web, file, URL, and Electron trust boundaries"
+  default_prompt: "Use $typescript-security-boundaries to audit and harden this TypeScript security boundary."

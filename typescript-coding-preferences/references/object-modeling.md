@@ -17,8 +17,8 @@ Use classes as a data/invariant shell plus shared prototype methods:
 
 ```ts
 interface PriceLike {
-  isZero(): boolean;
-  add(delta: number): Price;
+  isZero: () => boolean;
+  add: (delta: number) => Price;
 }
 
 export class Price implements PriceLike {
@@ -47,7 +47,7 @@ export interface UserData {
 }
 
 export interface UserService {
-  rename(user: UserData, newName: string): UserData;
+  rename: (user: UserData, newName: string) => UserData;
 }
 ```
 
@@ -69,8 +69,8 @@ Use static grouping when flat functions become hard to scan:
 
 ```ts
 interface UserOperations {
-  rename(user: UserData, newName: string): UserData;
-  displayName(user: UserData): string;
+  rename: (user: UserData, newName: string) => UserData;
+  displayName: (user: UserData) => string;
 }
 
 export const UserOps = {

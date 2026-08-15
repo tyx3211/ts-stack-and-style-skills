@@ -9,12 +9,13 @@ description: Use when writing, refactoring, or reviewing TypeScript code where s
 
 Follow a TypeScript style that is schema-first at boundaries, function/module-first in flow, data-first in modeling, and deliberately light on inheritance-oriented object-oriented programming. Treat this as the default project discipline, not a soft aesthetic preference. This is not an anti-class policy: use classes as scoped encapsulation units for real properties, invariants, and methods, but do not make inheritance or class hierarchies the architecture default.
 
-This is intentionally Go-like TypeScript: plain data, functions, small interfaces, explicit composition, and classes used like Go structs with methods when dot syntax, encapsulation, multiple instances, or prototype method sharing are useful.
+This is intentionally Go-like TypeScript: plain data, functions, small interfaces, explicit composition, and classes used like Go structs with methods when dot syntax, encapsulation, multiple instances, or prototype method sharing are useful. Do not imitate Go's limitations: TypeScript has substantially more expressive generics, discriminated unions, mapped types, and conditional types, so use them when they make relationships mechanically checkable without hiding runtime behavior or creating type-level puzzles.
 
 ## Default Stance
 
 - Default to explicit data flow, plain functions, and small modules.
 - Use composition and delegation over inheritance for code reuse; use inheritance only when the domain has a real, stable `is-a` relationship and the repository already benefits from that shape.
+- Take the Go-like part as an ownership and architecture preference, not a demand to write Go syntax in TypeScript. Keep interfaces small and behavior composable, while using TypeScript's stronger generics to preserve useful input/output relationships that Go would often express with simpler interfaces or explicit code.
 - Treat classic OOP patterns as problem-shape vocabulary, not as implementation templates.
 - Avoid Java/Spring-style TypeScript: controller classes, thick service/repository/manager layers, decorator-heavy dependency injection, and empty forwarding abstractions.
 - Follow framework conventions already present in the repository when they conflict with this skill, but do not introduce heavier patterns without a local reason.
@@ -83,7 +84,20 @@ Do not introduce class-based controllers, decorators, DI containers, or framewor
 
 Load [references/service-boundaries.md](references/service-boundaries.md) when editing Hono/oRPC/Elysia route, service, repo, policy, schema, or closure-based assembly code.
 
+Load `typescript-security-boundaries` when those boundaries handle DOM/HTML sinks, CORS/CSRF, cookies, authentication, passwords, uploads, filesystem paths, outbound URLs/SSRF, or Electron preload/IPC capabilities. Types and schemas describe checked shape; they do not prove authorization or sink safety.
+
 Load `backend-data-correctness` when editing repositories, Drizzle/Kysely queries, transactions, idempotency records, outbox/job writes, Redis cache adapters, cache invalidation, migrations, or backend data-access tests.
+
+## Error Handling Rules
+
+- Represent expected failures that callers must branch on with `Result<T, E>` and a feature-specific discriminated error union. Use `T | null | undefined` for ordinary absence; do not create one repository-wide `AppError`.
+- Throw `Error` for programmer mistakes, broken invariants, invalid startup state, and framework mechanisms that require exceptions. Do not throw business rejections or transport-specific errors from domain/usecase code.
+- Catch `unknown` at DB, HTTP, SDK, queue, and other external adapters, then validate and translate once. Preserve internal cause/context without exposing it through public contracts.
+- Classify schema failures by trust boundary. Invalid request input is an expected validation result; malformed external responses are protocol/infrastructure failures; invalid trusted persisted state is corruption or an invariant failure.
+- Every Promise must be awaited, returned, explicitly caught, or owned by a task supervisor. A `void` expression alone does not handle rejection; fire-and-forget requires an explicit rejection handler or a documented worker/task owner.
+- Terminating HTTP, RPC, worker, and job boundaries own exhaustive error mapping and one structured log/trace. Cleanup or rollback failure must not silently replace the original failure.
+
+Load [references/error-handling.md](references/error-handling.md) when designing or reviewing Result/throw boundaries, error unions, schema-failure classification, Promise rejection handling, HTTP/RPC/worker/job termination, Effect/neverthrow adoption, or transaction cleanup.
 
 ## ESLint, Hooks, And Type Safety
 
@@ -102,7 +116,7 @@ Load [references/lint-hooks-type-safety.md](references/lint-hooks-type-safety.md
 
 ## Typecheck Performance Preference
 
-For medium-to-large TypeScript repositories, local self-checks should default to full-project `tsgo --noEmit --pretty false`. This is usually fast and stable enough, and it avoids relying on possibly stale watch state. If the human developer says the time is unacceptable and explicitly asks for more speed, prefer a fully cached incremental command such as `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`; generally do not choose watch mode as the performance path.
+Use repository-pinned tools through package scripts; default to full-project TypeScript 7 `tsc --noEmit --pretty false`, never a global or floating compiler. While TS7 has no programmatic API, pin and verify the official TS6 compatibility alias for typed ESLint, AST tools, and embedded-language tooling. Add incremental caching only through checked-in configuration and a stable cache path; do not assume compatibility from plain `.ts` results alone.
 
 ## Performance And Shape Discipline
 

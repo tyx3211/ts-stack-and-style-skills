@@ -9,7 +9,7 @@
 | API contract | oRPC contract-first + OpenAPI | Hono RPC for lightweight internal calls, tRPC for internal full-stack monorepo |
 | Schema | Valibot or Zod | ArkType for advanced type expression, Effect Schema for effect-heavy domains |
 | Database | PostgreSQL + Drizzle | Kysely for SQL-heavy, Prisma for team CRUD DX |
-| Auth | Better Auth | Auth.js/Lucia/custom JWT only with project reason |
+| Auth | Better Auth | Auth.js, managed OIDC, or a deliberately implemented session layer only with project reason; do not start new work on the deprecated Lucia v3 library |
 | Redis | node-redis/ioredis adapter | Upstash Redis for serverless/runtime constraints |
 | Queue | pg-boss | BullMQ, Temporal |
 | Testing | Vitest + Playwright + contract tests | Bun test when Bun-only and team accepts it |

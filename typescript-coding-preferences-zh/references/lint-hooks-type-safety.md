@@ -122,7 +122,7 @@ npm run test
 npm run verify
 ```
 
-`build` 应表示“可信构建”，而不只是一次转译。对于使用 SWC 这类快速转译器的 TS 项目，应保留例如 `build:transpile` 这样的命令给单纯转译，而公开的 `build` 应完成 typecheck、lint、transpile、必要 codegen，以及生成文件一致性检查。
+推荐 command 语义：`build:artifact` 负责 emit/bundle；`verify` 依次执行 typecheck、lint、audit、test、必要 codegen/drift check，再执行 `build:artifact`；公开 `build` 可以 alias 到 `verify`。框架若要求 artifact-only `build`，可以保留，但必须把 `verify` 定义成 CI/agent 判决。`build` alias `verify` 时，`verify` 绝不能再调用 `build`。
 
 hook 和 CI 的失败信息必须明确且可操作：
 

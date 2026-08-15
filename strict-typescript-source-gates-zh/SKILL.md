@@ -1,423 +1,150 @@
 ---
 name: strict-typescript-source-gates-zh
-description: Use when defining, tightening, reviewing, or enforcing TypeScript source-code tsconfig, ESLint, npm scripts, git hooks, CI gates, assertion policy, or variance-safety rules for handwritten src code in Chinese workflow contexts.
+description: 用于编写、审查或强制执行严格的手写 TypeScript 源码，包括 tsconfig、ESLint、scripts、hooks、CI、数组和索引访问、可变别名与变型、跨 callback 或 await 收窄、类型守卫和断言函数、重载、品牌类型、声明与增强、monkey patch，以及 TypeScript 逃生舱或发版审计；适用于中文工作流。
 ---
 
 # 严格 TypeScript 源码门禁
 
-## 概览
+## 目标与范围
 
-对于手写的 `src/` TypeScript 源码，应把编译器、ESLint、package scripts、git hooks 和 CI 视为同一套硬门禁。目标是堵住 AI 生成代码最常见的逃生口：`any`、不安全断言、未校验外部输入、宽松相等、callback（回调）双变形状、陈旧生成文件，以及跳过校验的 build。
+把编译器、lint、测试、package scripts、hooks、CI 和人工审查视为同一反馈系统。优先机器规则；TypeScript 有意不健全或无法证明关系时，隔离信任决策、加标签、测试并生成清单。
 
-## 适用范围
+严格政策默认用于手写生产 `src/`。测试、fixtures、生成代码、迁移、vendored code 和遗留适配器使用独立显式政策，其放宽不得泄漏到生产源码。
 
-- 这些规则默认用于 `src/` 或等价生产源码目录里的手写代码。
-- tests（测试）、fixtures（测试夹具）、mocks（模拟对象）、generated code（生成代码）、migrations（迁移脚本）和 vendored code（外部拷贝代码）应使用单独配置，并明确写出放宽项。
-- 测试或生成代码的放宽规则不得泄漏到 `src/`。
-- 迁移旧系统时，把弱类型遗留适配隔离到边界模块里，不要因此放宽整个项目。
+## 按主题加载参考文件
 
-## 默认门禁
+- 数组、hole、checked access 和 kernel：[references/array-and-index-safety.md](references/array-and-index-safety.md)。
+- mutable widening、变型、alias、callback 和 `await`：[references/alias-variance-and-refinement.md](references/alias-variance-and-refinement.md)。
+- predicate、assertion、overload、brand、declaration、augmentation 和 monkey patch：[references/trusted-type-boundaries.md](references/trusted-type-boundaries.md)。
+- 逃生舱分类和发版 inventory：[references/escape-hatch-registry.md](references/escape-hatch-registry.md)。
+- 调用者泛型、method bivariance、lookup 声明、decorator、配置逃生舱及其他不明显的不健全入口：[references/additional-unsoundness-and-trust-claims.md](references/additional-unsoundness-and-trust-claims.md)。
+- 非强制但可执行的 TS7/TS6 API、typed ESLint、audit 与 build command 基线：[references/recommended-harness-blueprint.md](references/recommended-harness-blueprint.md)。
 
-- 默认使用 full ESLint + cache：对完整源码 lint 目标运行 `--cache` 和 `--max-warnings=0`。
-- `npm run lint` 应完整 lint `src/`，而不是只检查改动文件。改动文件 lint 可以作为额外的快速 pre-commit 步骤。
-- `npm run typecheck` 应运行无 emit 的项目类型检查。
-- `npm run build` 不能只是 transpile-only（只转译）。它必须包含 lint、typecheck、必要的 codegen 一致性检查，以及构建产物步骤。
-- `npm run verify` 应作为 agents、人工维护者、pre-push hooks 和 CI 共用的稳定命令。
-- 如果大型项目里 full ESLint 太重，先保持语义门禁不变，再尝试用 `oxlint` 负责快速 lint 类规则，并用 `tsgo` 或 `tsc --noEmit` 负责类型检查。在证明等价前，不要替换 type-aware ESLint（类型感知 ESLint）规则。
+数据库/Redis/事务正确性还要加载 `backend-data-correctness-zh`。
 
-推荐 scripts：
+## 必须工作流
 
-```json
-{
-  "scripts": {
-    "lint": "eslint \"src/**/*.{ts,tsx}\" --cache --cache-location .cache/eslint --max-warnings=0",
-    "typecheck": "tsc --noEmit",
-    "build": "npm run lint && npm run typecheck && npm run build:artifact",
-    "verify": "npm run lint && npm run typecheck && npm run test"
-  }
-}
-```
+1. 检查安装的 TypeScript、runtime、module model、配置和源码边界。
+2. 确认规则真实生效，不根据 preset 名猜覆盖。
+3. 用最小改动关闭目标缺口。
+4. 运行 agents、hooks、CI 共享公开命令。
+5. trust-boundary 或发版工作运行 `scripts/audit-type-escapes.mjs --deny-unreviewed <paths>`。
+6. 人工复核每个逃生舱与 `[SAFETY]:`、`[TRUSTME]:`、`[INDEX INVARIANT]:`。
+7. 报告有意例外和仍依赖人工的检查。
 
-如果仓库使用 `tsgo`，保持公开命令名不变，并明确实现：
+审计脚本只是 inventory heuristic，不是 alias/effect analysis 或 soundness proof。
+
+## 稳定命令
 
 ```json
 {
   "scripts": {
-    "typecheck": "tsgo --noEmit",
-    "verify": "npm run lint && npm run typecheck && npm run test"
+    "lint": "eslint \"src/**/*.{ts,tsx,mts,cts}\" --cache --cache-location .cache/eslint --max-warnings=0",
+    "typecheck": "tsc --noEmit --pretty false",
+    "audit:type-escapes": "node path/to/audit-type-escapes.mjs --deny-unreviewed src",
+    "build:artifact": "<framework-or-package artifact command>",
+    "verify": "npm run lint && npm run typecheck && npm run audit:type-escapes && npm run test && npm run build:artifact",
+    "build": "npm run verify"
   }
 }
 ```
 
-## TSConfig 基线
+在这份推荐 command graph 中，`build:artifact` 负责 emit/bundle，`verify` 是聚合判决，公开 `build` 非递归地 alias 到 `verify`。框架若必须保留 artifact-only `build`，CI 与 agent 就必须以 `verify` 为判决，且不得把裸 transpile 成功描述成正确性。changed-file lint 只能补充 full lint。
 
-除非框架接管配置，或者 package 有明确不同定位，新的 NodeNext 服务端 package 默认使用这份严格基线：
+## 编译器基线
+
+新 NodeNext server package 默认使用：
 
 ```jsonc
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "esModuleInterop": true,
-    "types": ["node"],
-
-    "strict": true,
-    "noImplicitAny": true,
-    "strictFunctionTypes": true,
-    "strictNullChecks": true,
+    "target": "ES2022", "lib": ["ES2022"],
+    "module": "NodeNext", "moduleResolution": "NodeNext",
+    "esModuleInterop": true, "types": ["node"],
+    "strict": true, "noImplicitAny": true,
+    "strictFunctionTypes": true, "strictNullChecks": true,
     "useUnknownInCatchVariables": true,
-
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
     "noPropertyAccessFromIndexSignature": true,
-
-    "noImplicitOverride": true,
-    "noImplicitReturns": true,
+    "noImplicitOverride": true, "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
-
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noUncheckedSideEffectImports": true,
-    "forceConsistentCasingInFileNames": true,
-
-    "skipLibCheck": false,
-    "rootDir": "src",
-    "outDir": "dist",
-    "sourceMap": true
-  },
-  "include": ["src/**/*.ts"]
+    "allowUnreachableCode": false, "allowUnusedLabels": false,
+    "verbatimModuleSyntax": true, "isolatedModules": true,
+    "moduleDetection": "force", "noUncheckedSideEffectImports": true,
+    "forceConsistentCasingInFileNames": true, "skipLibCheck": false
+  }
 }
 ```
 
-说明：
+政策选项即使默认开启也显式写出。library、shared package、contract、基础设施和可信边界优先 `skipLibCheck:false`；app 的 `true` 必须是实测、记录过的 declaration-trust 折中。
 
-- 即使 TypeScript 版本默认开启 `strict`，也显式写出 `strict` 和 `noImplicitAny`，因为这属于项目政策。
-- `strictFunctionTypes` 已包含在 `strict` 中，但仍显式写出，因为双变安全是本规范的一部分。
-- 在 NodeNext module model（NodeNext 模块模型）下，把 `esModuleInterop: true` 作为 CommonJS interop（CommonJS 互操作）的默认心智模型；任何例外都必须显式记录。
-- library（库）、shared package（共享包）、基础设施 package 和边界敏感代码，优先 `skipLibCheck: false`。大型 app 可以把 `skipLibCheck: true` 作为有记录的性能折中；它会信任声明文件边界类型，并跳过许多 `.d.ts` 内部错误。
-- 如果当前 TypeScript 支持 `erasableSyntaxOnly`，且项目想贴近 Node 原生 TypeScript 兼容路线，可以考虑开启；但这会影响 enum、namespace、parameter property（参数属性）等写法，必须作为明确迁移任务处理。
+权威 checker 使用 TypeScript 7 `tsc`。TS7.0 没有 programmatic compiler API，因此 typescript-eslint 与本 skill 的 AST inventory 需要锁定的 TypeScript 6 compatibility API。当前官方 side-by-side 基线把 TS7 alias 为 `@typescript/native`，并把 `@typescript/typescript6` alias 成名为 `typescript` 的 package；必须实际验证 wiring。不得使用过时 `@typescript/native-preview`/`tsgo` 或 global fallback。embedded-language tooling 可使用同一显式 TS6 compatibility track，但它不得成为普通 `.ts` 的权威。精确 wiring 与允许替代方案见推荐 harness blueprint。
 
 ## ESLint 基线
 
-对于 `src/`，至少强制：
+生产源码使用 type-aware lint，并确认规则存在于安装版本。下列只是 policy fragment，不是完整 flat-config 安装；最终 config 必须像推荐 harness blueprint 所述，包含锁定 import、project-aware parser/project service、文件政策与失败 fixtures：
 
 ```js
-export default [
-  {
-    files: ["src/**/*.{ts,tsx}"],
-    rules: {
-      eqeqeq: ["error", "always"],
-      "no-implicit-coercion": "error",
-      "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-unsafe-assignment": "error",
-      "@typescript-eslint/no-unsafe-argument": "error",
-      "@typescript-eslint/no-unsafe-call": "error",
-      "@typescript-eslint/no-unsafe-member-access": "error",
-      "@typescript-eslint/no-unsafe-return": "error",
-      "@typescript-eslint/strict-boolean-expressions": "error",
-      "@typescript-eslint/no-unnecessary-type-assertion": "error",
-      "@typescript-eslint/no-unsafe-type-assertion": "error",
-      "@typescript-eslint/method-signature-style": ["error", "property"]
-    }
-  }
-];
+export default [{ files: ["src/**/*.{ts,tsx,mts,cts}"], rules: {
+  eqeqeq: ["error", "always"], "no-implicit-coercion": "error",
+  "@typescript-eslint/no-explicit-any": "error",
+  "@typescript-eslint/no-unsafe-assignment": "error",
+  "@typescript-eslint/no-unsafe-argument": "error",
+  "@typescript-eslint/no-unsafe-call": "error",
+  "@typescript-eslint/no-unsafe-member-access": "error",
+  "@typescript-eslint/no-unsafe-return": "error",
+  "@typescript-eslint/no-unsafe-type-assertion": "error",
+  "@typescript-eslint/no-unnecessary-type-assertion": "error",
+  "@typescript-eslint/no-non-null-assertion": "error",
+  "@typescript-eslint/strict-boolean-expressions": "error",
+  "@typescript-eslint/method-signature-style": ["error", "property"],
+  "@typescript-eslint/no-array-delete": "error",
+  "@typescript-eslint/no-for-in-array": "error",
+  "@typescript-eslint/no-floating-promises": "error",
+  "@typescript-eslint/no-misused-promises": ["error", { "checksVoidReturn": true }],
+  "@typescript-eslint/switch-exhaustiveness-check": "error",
+  "@typescript-eslint/only-throw-error": "error",
+  "@typescript-eslint/use-unknown-in-catch-callback-variable": "error",
+  "@typescript-eslint/no-unsafe-declaration-merging": "error",
+  "@typescript-eslint/unbound-method": "error",
+  "@typescript-eslint/unified-signatures": "error"
+} }];
 ```
 
-对于定义 domain model（领域模型）、shared library（共享库）、core utility（核心工具）、protocol layer（协议层）等边界敏感代码的源码目录，还应强制 readonly parameter type（只读参数类型）：
+另用 `consistent-type-assertions`、`no-restricted-syntax` 或本地 AST rule 允许 `as const`、默认拒绝其他 assertion；`no-unsafe-type-assertion` 不能单独禁完。core/domain/lib/shared/protocol 使用 `prefer-readonly-parameter-types:error`；framework-heavy glue 可经实测改 `warn`。`readonly` 是浅层约束，不证明 ownership。
 
-```js
-export default [
-  {
-    files: ["src/**/*.{ts,tsx}"],
-    rules: {
-      "@typescript-eslint/prefer-readonly-parameter-types": "warn"
-    }
-  },
-  {
-    files: ["src/{core,domain,lib,shared,utils,protocols}/**/*.{ts,tsx}"],
-    rules: {
-      "@typescript-eslint/prefer-readonly-parameter-types": "error"
-    }
-  }
-];
-```
+## 不可协商源码规则
 
-如果这条规则在 framework-heavy UI（框架类型很重的界面层）或应用胶水代码里噪音太大，可以在这些目录保持 `warn`，或者暂不开。但不要因此放宽边界敏感源码目录的 `error` 规则。
+- 外部输入从 `unknown` 开始并经过 runtime parser/schema。
+- 允许 `as const`，优先 `satisfies`；其他 assertion 是例外，不是 validation。
+- 禁止 `JSON.parse(...) as T`、`as unknown as T` 和未校验 SDK/IPC/database/network 值。
+- `json<T>()`、`query<T>()`、`invoke<T>()`、`querySelector<T>()` 等 caller-supplied generic runtime result，如果没有 runtime validation 或 generated contract 证据，应视为远距离 assertion。
+- 有限状态使用 discriminated union 和 exhaustive switch。
+- 可赋值 callback/handler/visitor/comparer/middleware/listener 边界使用 function property；class 实现可保留 prototype method。
+- override 不缩窄参数；`noImplicitOverride` 不能关闭 method bivariance。
+- 不把 bare method 当 callback。
+- 公共 collection 默认 readonly；扩宽后需要修改时先 copy。
+- 不跨 unknown callback、escaping closure、事件轮次或 `await` 保留 mutable property refinement；应快照稳定 immutable data 或重验。
+- plugin/registry/DI 边界优先 factory，不用 generic constructor signature。
+- 普通 production 禁止 monkey patch 和对 runtime 行为的 ambient 承诺。
 
-对于 Drizzle 项目，如果可用，也应开启 Drizzle ESLint 规则：
+## 审查标签
 
-```js
-export default [
-  {
-    files: ["src/**/*.{ts,tsx}"],
-    rules: {
-      "drizzle/enforce-delete-with-where": "error",
-      "drizzle/enforce-update-with-where": "error"
-    }
-  }
-];
-```
-
-如果暂时无法使用插件，就用本地 lint 规则或 review 门禁执行同等政策。更详细的数据库与 Redis 正确性规则属于 `backend-data-correctness-zh`。
-
-断言策略：
-
-- 允许 `as const`。
-- 字面量需要接受检查但保留精确推导时，优先 `satisfies`。
-- 手写 `src/` 里默认禁止其他 `as` 断言。应改用 guard（类型守卫）、discriminated union（可判别联合）、schema parse（schema 校验解析）或类型明确的 adapter function（适配函数）。
-- 断言策略必须通过 `@typescript-eslint/consistent-type-assertions`、`no-restricted-syntax` 或本地规则机械执行：允许 `as const`，拒绝其他 `as` 断言。
-- non-null assertion（非空断言）`value!` 只能用于局部显然成立的不变量，或有窄范围注释说明的互操作理由。
-- `JSON.parse(...) as T`、`payload.value as number` 和 `as unknown as T` 属于政策失败，除非被隔离在有运行时校验的边界适配器中。
-
-如果仓库当前插件版本的现成 ESLint 规则不能干净表达“允许 `as const`，拒绝其他断言”，就补一条本地小规则或 `no-restricted-syntax` 策略，而不是放宽要求。
-
-## 边界校验
-
-- 外部输入一律先视为 `unknown`。
-- 使用 schema parse、`typeof`、discriminated union 或自定义 type guard 收窄后再使用。
-- 数值要同时校验类型和值：`typeof value === "number" && Number.isFinite(value)`。
-- 当数据库行、API 响应和 UI view model（视图模型）的形状不同，应保持分离。
-- 生成的 OpenAPI client、oRPC contract 和 schema 派生 client 必须在 CI 中重新生成并做 diff 检查。
-
-## 双变与 Unsound 写法规避
-
-TypeScript 为了 JavaScript 兼容保留了一些 unsound（类型系统不完全可靠）行为。`strictFunctionTypes` 能收紧一部分问题，但 method declaration（方法声明）和 constructor declaration（构造器声明）仍保留历史双变口子。已经验证到 TypeScript 6.0.3 里，class-to-class structural assignment（具体 class 之间的结构化赋值）配合 prototype method（原型方法）仍可能通过类型检查，然后在运行时报错。项目代码必须通过写法、lint 规则和 review 门禁主动收口。
-
-callback 类能力在可赋值类型边界上使用 function property（函数属性）：
+采用对标 Rust `unsafe` 的哲学：必要逃生舱如果是最清晰的实现，完全欢迎使用；但其信任边界必须显式、窄小、可被机器盘点、有证据支撑且便于集中审查。不得把灵活性藏进看似无害的 helper 或伪 guard。这里的标签是项目审计约定，并不声称 TypeScript 拥有 Rust 编译器强制的 `unsafe` 边界。
 
 ```ts
-type Handler<T> = {
-  handle: (value: T) => void;
-};
+// [SAFETY]: <runtime evidence，以及为何建立声明 invariant>
+// [TRUSTME]: <external declaration/runtime contract、负责人和验证>
+// [INDEX INVARIANT]: <bounds、density、length relation 和保持理由>
 ```
 
-避免把泛型 callback 边界写成 method signature（方法签名）：
+例外保持最小，并通过稳定文件和 exported symbol 互指，不只写行号。标签是审查证据，不是证明。
 
-```ts
-interface Handler<T> {
-  handle(value: T): void;
-}
-```
+禁止 `@ts-ignore`、`@ts-nocheck`。极少数 `@ts-expect-error` 必须单行、可追踪且 unused 时失败。lint disable 点名一条规则、覆盖最小范围、带标签，并报告 unused directive。
 
-class 实现仍然可以使用 prototype method：
+## 性能与 Review
 
-```ts
-class DogHandler implements Handler<Dog> {
-  handle(value: Dog): void {
-    value.bark();
-  }
-}
-```
+默认 full cached ESLint 加完整 `tsc --noEmit`。Oxlint 可加快速路径，但未覆盖语义规则保留 ESLint。用故意失败 fixture 证明 assertion、`any`、sparse array、method boundary、Promise misuse、declaration 和 unbound method 的覆盖。只有实测和人工批准后才优化；watch 状态不是发版判决。
 
-不要为了满足边界规则，就把普通实现函数改成 arrow/function property（箭头函数 / 函数属性）。普通 function declaration（函数声明）、局部 helper、对象方法和 class prototype method（类原型方法）仍然是惯用写法。class 函数字段是每个实例一份的函数，不是 prototype method；只有在 callback 字段确实需要稳定 `this` 绑定时才使用。
-
-赋值目标侧规则：在 `strictFunctionTypes: true` 下，决定检查强度的关键不是外层是 `class`、`interface` 还是 `type`，而是被赋值方的成员形状。目标侧写成 `handle: (value: T) => void`，TypeScript 会使用更严格的函数参数检查。目标侧写成 `handle(value: T): void`，即使来源侧是 arrow/function property（箭头函数 / 函数属性），历史 method bivariance（方法双变）口子仍可能保留。因此，可能作为赋值目标的 `interface` 和 `type` 边界必须被 lint 成 function property 形式。
-
-任何可能作为 assignment target（赋值目标）、parameter type（参数类型）、return type（返回类型）、registry slot（注册表槽位）、dependency token（依赖令牌）或 exported contract（导出契约）的边界，都使用这种写法：
-
-```ts
-interface Handler<T> {
-  handle: (value: T) => void;
-}
-```
-
-不要把可赋值边界写成这种形式：
-
-```ts
-interface Handler<T> {
-  handle(value: T): void;
-}
-```
-
-规则：
-
-- callback、handler、visitor、comparer、middleware、listener 等形状应使用 function property，而不是 method signature。
-- 任何作为 assignable abstraction boundary（可赋值抽象边界）的 `interface` 或 `type`，函数成员都必须写成 function property。`@typescript-eslint/method-signature-style: ["error", "property"]` 因此是强制规则。
-- 禁止把互不相关的 concrete class type（具体 class 类型）通过结构化赋值当抽象边界使用。抽象边界默认改用 `interface` 或 `type`，并把函数成员写成 function property。
-- 公开输入集合默认使用 `readonly T[]` 或 `ReadonlyArray<T>`。
-- 只有当函数明确拥有该数组，或者契约明确要求函数修改该数组时，才使用可变 `T[]`。
-- 不要通过别名把窄的 mutable array（可变数组）扩宽成宽的 mutable array，例如把 `Dog[]` 直接赋给 `Animal[]`。如果需要可变的宽类型数组，先拷贝：`const animals: Animal[] = [...dogs]`。
-- 不要在公共 API 中暴露可变数组，除非所有权语义明确。
-- 优先小型 capability interface（能力接口）和组合，而不是继承树。
-- 对 plugin registry（插件注册表）、dependency container（依赖容器）、ORM factory（ORM 工厂）等泛型创建边界，优先 factory function（工厂函数），例如 `create: (config: Config) => Plugin`，而不是 `new (config: Config) => Plugin`。
-- class method 可以用于内禀实现细节，但不要把 method signature 当成泛型 callback 边界形状。
-- 禁止把裸 class method 直接作为 callback 传出。使用 wrapper（包装函数），例如 `(value) => service.handle(value)`，或者使用明确设计过的绑定 callback 字段。
-- `noImplicitOverride` 不是 variance safety switch（变型安全开关）。它只能要求写出 `override`，不能让 prototype method 参数自动变成严格逆变检查。
-- override 不允许把参数类型从基类契约缩窄成子类窄类型。如果子类只想特殊处理窄类型，保持基类签名不变，在方法体内部收窄。
-
-基类多态边界态度：
-
-- 默认推荐：优先使用组合，加小型 `interface` 或 `type` capability boundary（能力边界）。这是项目风格，因为它能提供更清晰的赋值门禁，也能避免继承驱动架构。
-- 如果同时启用 `typescript-coding-preferences`，继承在新设计里也应视为风格违规：尽量写 Go 式 TypeScript，也就是 plain data（朴素数据）、函数、小接口和组合；除非框架 / 库或仓库既有约定要求，否则不要引入继承。
-- 允许但要有理由：当 `abstract class`（抽象类）或基类表达真实稳定的 `is-a` 关系、共享 invariant（不变量）、protected state（受保护状态）、template method（模板方法），或者框架 / 库明确要求时，可以作为多态边界。
-- 仍然是优化候选：即使基类边界写得规范，它也只是可接受方案，不是默认偏好。在本项目组合优于继承的偏好下，如果基类不再承载真实不变量或运行时价值，应优化为组合加 capability interface。
-- 基类必须遵守的纪律：使用 `override`，不得缩窄 method 参数，让子类契约至少和基类契约一样宽；需要特殊处理窄类型时，在方法体内部收窄。
-- 如果确实想让边界接近 nominal（名义化），优先使用 `abstract` 基类，或者让基类拥有真实的 `private` / `protected` 成员。只有 public method（公开方法）的基类类型更容易被误用成结构化 class 边界。
-
-禁止的无关 class-to-class 结构化边界：
-
-```ts
-class AnimalHandler {
-  handle(value: Animal): void {}
-}
-
-class DogHandler {
-  handle(value: Dog): void {
-    value.bark();
-  }
-}
-
-const handler: AnimalHandler = new DogHandler(); // 禁止：可能通过类型检查并在运行时报错
-```
-
-默认推荐的边界形状：
-
-```ts
-interface Handler<T> {
-  handle: (value: T) => void;
-}
-
-class DogHandler implements Handler<Dog> {
-  handle(value: Dog): void {
-    value.bark();
-  }
-}
-
-const handler: Handler<Animal> = new DogHandler(); // 会被 strictFunctionTypes 拦住
-```
-
-可接受但非默认的基类多态边界：
-
-```ts
-abstract class AnimalHandler {
-  protected readonly _handlerBrand!: void;
-
-  abstract handle(value: Animal): void;
-}
-
-class DogAwareHandler extends AnimalHandler {
-  override handle(value: Animal): void {
-    if (value instanceof Dog) {
-      value.bark();
-    }
-  }
-}
-```
-
-禁止的 override 参数缩窄：
-
-```ts
-class BaseHandler {
-  handle(value: Animal): void {}
-}
-
-class DerivedHandler extends BaseHandler {
-  override handle(value: Dog): void {
-    value.bark();
-  }
-}
-```
-
-必须使用的 override 形状：
-
-```ts
-class DerivedHandler extends BaseHandler {
-  override handle(value: Animal): void {
-    if (value instanceof Dog) {
-      value.bark();
-    }
-  }
-}
-```
-
-极少数情况下，如果某个 concrete class 必须防止结构相同的 class 互相赋值，可以加 `private` 或 `protected` brand（品牌字段）。不要到处滥用 brand；默认抽象路线仍然是 `interface` 或 `type`。
-
-## Hooks 与 CI
-
-- `pre-commit`：运行格式化和快速检查；可以在这里跑 changed-file lint，但它不能替代 full lint。
-- `pre-push`：运行 `npm run verify`。
-- CI：干净安装、codegen 一致性检查、完整 lint、完整 typecheck、测试、build 和产物检查。
-- hooks 应调用共享 package scripts，不要把另一套逻辑藏在 hook 文件里。
-- 每个失败信息都应指向 agent 可以在本地运行的命令。
-
-## 大项目性能路径
-
-默认仍然是 full ESLint + cache。如果项目变得很大：
-
-1. 保持 `npm run verify` 的语义稳定。
-2. 对中大仓库，当仓库的 `tsconfig` 已完成迁移时，默认使用来自 `@typescript/native-preview` 的全量 `tsgo --noEmit --pretty false` 做 TypeScript 7 native-preview 类型检查。它通常已经够快、够稳，也能覆盖较大的源码改动。项目暂时不兼容 TS7 时，保留 `tsc --noEmit`。
-3. 使用 `oxlint --type-aware --type-check` 搭配 `oxlint-tsgolint` 作为快速主 lint 和 type diagnostic 路径。它可以覆盖很多高价值 type-aware 规则和 TypeScript compiler diagnostics。
-4. 只为 `oxlint` 当前不能覆盖或语义不能匹配的规则保留 cached ESLint。常见剩余规则是 `@typescript-eslint/method-signature-style: ["error", "property"]`。
-5. 用已知违规样例证明等价：显式 `any`、unsafe assignment、unsafe argument、禁止的断言、method-signature callback、宽松相等、陈旧生成文件。
-
-不要悄悄用速度换严格度。任何更快路径都必须继续拦住 `src/` 中真正重要的政策违规。
-
-对大型仓库使用分层工作流：
-
-- AI agent 日常自检：运行 `oxlint --type-aware --type-check`，运行 cached ESLint fallback rules，并运行全量 `tsgo --noEmit --pretty false`。即使在中大型 TypeScript 仓库里，这也应保持默认，因为全量 `tsgo` 通常已经足够快，而且比 watch 状态更容易信任。
-- 如果全量 `tsgo` 的耗时确实不可接受，并且人类开发者明确要求继续加速，才优先尝试全缓存 incremental（增量）检查，例如 `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`。应在叶子改动、中心组件改动、中心加叶子混合改动后分别和全量 `tsgo` 实测对比；不要默认假设 incremental 在中心组件或大 patch 下更快。
-- `pre-commit`：运行 formatting、full 或 scoped `oxlint`、cached ESLint fallback rules，并直接运行 `tsgo --noEmit --pretty false`，除非仓库已经基于实测刻意采用了某个 incremental 命令。
-- `pre-push` 和 CI：运行完整共享 `npm run verify`，包括 codegen 检查、lint、typecheck、tests 和 build。
-
-不允许 AI agent 单方面把 cached ESLint fallback rules 从日常自检中移除。只有人类开发者明确说检查太慢，或要求优化流程时，才讨论这个优化。此时可以询问或提出小的、可衡量的调整，例如把 fallback 移到 `pre-commit`/`pre-push`，但在人工接受 tradeoff 前保持更严格默认。AI 迭代时，全源码反馈通常比 changed-file-only lint 更好。
-
-不要把第三方仓库扫描结果直接当成 bug，除非规则集匹配该仓库政策。缺依赖、项目风格冲突（例如 Chai `no-unused-expressions`）是工具链发现，不是自动 correctness bug。有效迁移发现包括 `tsgo` 报出的 TS7 错误，例如已移除的 `tsconfig` 选项。
-
-推荐 TS7/Oxlint 项目 scripts：
-
-```json
-{
-  "scripts": {
-    "lint:ox": "oxlint src --type-aware --type-check --max-warnings=0",
-    "lint": "eslint \"src/**/*.{ts,tsx}\" --cache --cache-location .cache/eslint --max-warnings=0",
-    "typecheck": "tsgo --noEmit --pretty false",
-    "verify": "npm run lint:ox && npm run lint && npm run typecheck && npm run test && npm run build:artifact"
-  }
-}
-```
-
-当 `lint` 只为 `method-signature-style` 存在时，保持 ESLint config 足够小，不要重复跑完整 type-aware ESLint stack。
-
-watch mode（监听模式）不是默认性能路径。Windows 友好的 `tsgo --watch --noEmit` 状态脚本仍可作为可选后台状态源，但前提是仓库已经实测它有收益并明确想要采用。此时优先使用 wrapper：
-
-- 后台启动 `node_modules/@typescript/native-preview/bin/tsgo.js --noEmit --watch --pretty false`；
-- 输出重定向到 `.cache/tsgo-watch.log`；
-- wrapper PID 写入 `.cache/tsgo-watch.pid`；
-- `status` 打印最新 `Found 0 errors` summary 和最近 `error TSxxxx` diagnostics；
-- Windows 下 `stop` 使用 `taskkill /PID <pid> /T /F`。
-
-关键 watch 命令是 `tsgo --watch --noEmit`；watch mode 不代表 `noEmit`。除非 `tsconfig` 已保证 `noEmit`，否则显式传 `--noEmit`。
-
-## Review 清单
-
-- `src/` 是否禁止显式和隐式 `any`？
-- 类型断言是否只限于 `as const`、`satisfies`，或者带运行时校验的边界适配器？
-- lint 是否覆盖完整源码范围、开启 cache，并使用 `--max-warnings=0`？
-- `build` 是否包含 lint 和 typecheck？
-- hooks 和 CI 是否调用同一套共享 scripts？
-- tests 和 generated code 是否与 `src/` 政策隔离？
-- callback 类 interface 是否使用 function property？
-- 可赋值的 `interface` 和 `type` 边界是否在目标侧使用 function property？
-- 如果启用了 `typescript-coding-preferences`，新代码是否为了 Go 式 TypeScript 风格避免了继承，除非框架 / 库或仓库约束要求？
-- 基类多态边界是否有真实 `is-a`、不变量、受保护状态、模板方法或框架要求，而不是只为复用方便？
-- 公开数组入参是否默认 readonly？
-- 可变数组扩宽时是否先拷贝，而不是共享别名？
-- 泛型插件或注册表边界是否避免 constructor type？
-
-## 双变专项 Review
-
-在接收大型 AI 生成 TypeScript 改动前，以及周期性代码巡检时，专门跑这一轮 review：
-
-- 搜索 concrete class-to-class structural assignment（具体 class 之间的结构化赋值），尤其是 `const x: SomeClass = new OtherClass()`。
-- 搜索参数类型比基类 method 更窄的 `override` method。
-- 搜索只充当抽象能力边界的基类，并判断是否应优化为组合加 `interface` 或 `type`。
-- 搜索 method-shaped generic boundary（方法形状的泛型边界），例如 `handle(value: T): void`、`compare(a: T, b: T): number`、`visit(node: T): void`。
-- 搜索可赋值的 `interface` 或 `type` 目标侧，其函数成员是否仍是 method，而不是 function property。
-- 搜索 mutable array widening alias（可变数组扩宽别名），例如 `const animals: Animal[] = dogs`。
-- 搜索把 constructor type（构造器类型）用于泛型注册表或依赖注入边界的写法。
-- 搜索把裸 method reference（方法引用）当 callback 传出的写法，例如 `emitter.on("x", service.handle)`。
+接受前确认：共享命令用锁定本地工具完整运行；配置放宽与源码逃生舱已 inventory；数组 dense 且索引已处理；不存在 mutable widening alias；effect 后已重验 refinement；callback boundary 使用 function property；generic runtime claim 已校验或加标签；所有快速路径都捕获政策 fixtures。

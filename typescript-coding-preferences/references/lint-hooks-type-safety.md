@@ -122,7 +122,7 @@ npm run test
 npm run verify
 ```
 
-`build` should mean a trusted build, not just transpilation. In TS projects using fast transpilers such as SWC, keep a separate command like `build:transpile`; make the public `build` run typecheck, lint, transpile, required codegen, and generated-file consistency checks.
+Recommended command semantics: `build:artifact` performs emit/bundling; `verify` runs typecheck, lint, audits, tests, required codegen/drift checks, and then `build:artifact`; public `build` may alias `verify`. If a framework requires artifact-only `build`, keep it but make `verify` the documented CI/agent verdict. Never let `verify` call `build` when `build` aliases `verify`.
 
 Hook and CI failures should be explicit and actionable:
 

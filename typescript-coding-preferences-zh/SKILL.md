@@ -9,12 +9,13 @@ description: Use when writing, refactoring, or reviewing TypeScript code with Ch
 
 这里采用的 TypeScript 风格是：边界以 schema（运行时校验结构）为先，流程以函数 / 模块为先，建模以数据为先，并且有意识地减少 inheritance-oriented OOP（继承导向的面向对象编程）的默认比重。它应被视为项目默认纪律，而不是柔性的审美偏好。这不是反 class（类）政策：对于确实有属性、不变量和方法需要封装的对象，class 是很合适的封装单位；但不要把继承或 class hierarchy（类层级）作为架构默认形态。
 
-这是一种有意偏 Go 式的 TypeScript：plain data（朴素数据）、函数、小接口、显式组合，并且在 dot syntax（点语法）、封装、多实例或 prototype method（原型方法）共享有收益时，把 class 当作类似 Go struct + methods（Go 结构体加方法）的工具使用。
+这是一种有意偏 Go 式的 TypeScript：plain data（朴素数据）、函数、小接口、显式组合，并且在 dot syntax（点语法）、封装、多实例或 prototype method（原型方法）共享有收益时，把 class 当作类似 Go struct + methods（Go 结构体加方法）的工具使用。但不要模仿 Go 的能力限制：TypeScript 的泛型、discriminated union、mapped type 和 conditional type 明显更灵活；当它们能让关系被机器检查，又不会隐藏 runtime 行为或制造类型体操时，应当使用。
 
 ## 默认立场
 
 - 默认使用显式数据流、普通函数和小模块。
 - 在代码复用上，使用组合与委托，而不是继承；只有当领域里真的存在稳定的 `is-a` 关系，并且仓库已经从这种形态中获益时，才使用继承。
+- “Go 式”主要是一种 ownership 与架构偏好，不是要求在 TypeScript 里照抄 Go 语法。保持接口小、行为可组合，同时使用 TypeScript 更强的泛型保留有价值的输入/输出关系；这些关系在 Go 中往往只能由更简单接口或显式代码表达。
 - 把经典 OOP 模式当成“问题形状词汇”，而不是默认实现模板。
 - 避免 Java / Spring 风格的 TypeScript：controller class（控制器类）、厚重的 service / repository / manager 分层、装饰器密集的依赖注入，以及空转发抽象层。
 - 如果仓库已经有明确框架约定，应当尊重本地惯例；但在没有本地理由时，不得额外引入更重的模式。
@@ -83,7 +84,20 @@ class 方法应保持轻薄且内禀。持久化、编排、授权、格式化�
 
 在修改 Hono / oRPC / Elysia 路由、service、repo、policy、schema 或基于闭包的依赖装配代码前，请读取 [references/service-boundaries.md](references/service-boundaries.md)。
 
+当这些边界处理 DOM / HTML sink、CORS / CSRF、Cookie、认证、密码、上传、文件系统路径、外发 URL / SSRF 或 Electron preload / IPC capability 时，加载 `typescript-security-boundaries-zh`。类型和 schema 只能描述已检查的形状，不能证明授权或 sink 安全。
+
 当修改 repository（仓储）、Drizzle / Kysely 查询、事务、幂等记录、outbox / job 写入、Redis cache adapter、缓存失效、迁移或后端数据访问测试时，加载 `backend-data-correctness-zh`。
+
+## 错误处理规则
+
+- 调用方必须按原因分支的预期失败，使用 `Result<T, E>` 与 feature-specific（功能专属）的 discriminated error union（可辨识错误联合）表达。普通缺失使用 `T | null | undefined`；不要定义一个覆盖全仓的巨大 `AppError`。
+- 程序员错误、不变量破坏、非法启动状态，以及框架必须依靠异常完成的机制，使用 `throw Error`。domain / usecase 代码不得通过 throw 表达业务拒绝，也不得抛出 transport-specific（传输层专属）错误。
+- 在 DB、HTTP、SDK、queue 等外部 adapter 处 `catch unknown`，随后只做一次校验和语义转换。保留内部 cause / context，但不得通过公共 contract 暴露。
+- 按信任边界分类 schema 失败：非法请求输入是预期 validation result；畸形外部响应是 protocol / infrastructure failure；可信持久状态不符合 schema 属于数据损坏或不变量失败。
+- 每个 Promise 都必须被 await、return、显式 catch，或由 task supervisor 接管。单独写 `void` 并不会处理 rejection；fire-and-forget 必须有显式 rejection handler 或有文档说明的 worker / task owner。
+- HTTP、RPC、worker、job 的终止边界负责穷尽错误映射，并只记录一次结构化 log / trace。cleanup 或 rollback 的失败不得静默覆盖原始失败。
+
+在设计或审查 Result / throw 边界、错误联合、schema 失败分类、Promise rejection、HTTP / RPC / worker / job 终止处理、Effect / neverthrow 引入阈值或事务清理时，请读取 [references/error-handling.md](references/error-handling.md)。
 
 ## ESLint、Hooks 与类型安全
 
@@ -102,7 +116,7 @@ class 方法应保持轻薄且内禀。持久化、编排、授权、格式化�
 
 ## 类型检查性能偏好
 
-对中大型 TypeScript 仓库，本地自检默认使用全量 `tsgo --noEmit --pretty false`。它通常已经够快、够稳，也避免依赖可能陈旧的 watch 状态。如果人类开发者明确表示耗时不可接受，并要求继续加速，优先考虑全缓存 incremental（增量）命令，例如 `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`；一般不要把 watch mode（监听模式）作为性能路径。
+通过仓库 package script 使用锁定工具；默认执行全量 TypeScript 7 `tsc --noEmit --pretty false`，不得依赖 global/floating compiler。TS7 没有 programmatic API 期间，为 typed ESLint、AST tool 与 embedded-language tooling 锁定并验证官方 TS6 compatibility alias。incremental cache 只能来自签入配置与稳定 cache path；不能只凭普通 `.ts` 结果推定兼容。
 
 ## 性能与对象形状纪律
 
