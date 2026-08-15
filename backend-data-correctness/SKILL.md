@@ -212,6 +212,8 @@ Rules:
 - Redis clients must be created centrally, reused across requests, configured with explicit error-event, reconnect, timeout, and offline-queue policy, and closed through the application's shutdown path. Do not create a Redis client per request.
 - Redis loss, expiry, eviction, or persistence gaps must have a documented recovery path; do not treat Redis durability as PostgreSQL durability.
 
+For versioned projections, read-your-write fences, old miss-fill races, cache invalidation outboxes, session revocation, or PostgreSQL/Redis reconciliation, also load `postgres-redis-cache-consistency`. A version comparison prevents regression; by itself it does not prove that a cache contains the latest committed source state.
+
 Cache adapter shape:
 
 ```ts
@@ -276,6 +278,8 @@ For Redis Cluster, any multi-key atomic logic must declare cluster compatibility
 
 ## Side Effects, Idempotency, And Migrations
 
+When correctness also depends on an in-process command queue, Electron/CLI process ownership, SQLite plus files/devices, cancellation, shutdown, or crash recovery, load `async-application-correctness`. A queue may order attempts; the transaction, idempotency record, outbox, or reconciliation state owns durable correctness.
+
 - External side effects should use outbox, after-commit hooks, or committed job rows. Do not call external services from inside a database transaction.
 - Do not write Redis cache as final state before the database commit. After a successful commit, invalidate or delete affected cache keys, or publish an outbox/job row that performs invalidation.
 - Mutating usecases must declare affected cache keys or the reason no cache invalidation is needed.
@@ -313,10 +317,6 @@ When using Drizzle, enable Drizzle ESLint rules where available:
 ```
 
 If the plugin cannot be used, enforce the same policy with review, tests, or local lint rules.
-
-## Typecheck Performance Preference
-
-For medium-to-large TypeScript repositories, default to full-project `tsgo --noEmit --pretty false` for local typecheck self-checks. This is usually fast and stable enough. If the human developer says the time is unacceptable and explicitly asks for more speed, prefer a fully cached incremental command such as `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`; generally avoid treating watch mode as the performance path.
 
 ## Review Checklist
 

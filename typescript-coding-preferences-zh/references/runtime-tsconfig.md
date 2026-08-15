@@ -12,12 +12,14 @@
     "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": false
   }
 }
 ```
 
 `NodeNext` 可以让 TypeScript 的模块解析行为与 Node 的 ESM / CommonJS 包解析规则保持一致。`esModuleInterop: true` 则可以减少与仍以 CommonJS 风格导出的 npm 包互操作时的摩擦。
+
+library、shared / contracts package、基础设施和可信边界代码保持 `skipLibCheck: false`。大型叶子 app 只有在实测并记录性能折中后才能设为 `true`；这会扩大对依赖声明文件的信任。完整源码基线加载 `strict-typescript-source-gates-zh`，package exports 与跨包解析加载 `typescript-monorepo-toolchain-zh`。
 
 ## 运行时偏好
 

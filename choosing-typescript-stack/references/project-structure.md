@@ -121,12 +121,14 @@ Use this as the default for new server-side packages unless a framework owns tsc
     "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": false
   }
 }
 ```
 
 Treat migration from CommonJS to `NodeNext` as an explicit task, not as incidental cleanup.
+
+Libraries, shared packages, infrastructure packages, and boundary-sensitive code should keep `skipLibCheck: false`. A large leaf application may set it to `true` only as a measured, documented performance compromise; doing so expands trust in dependency declarations. For the executable workspace graph, runtime resolution, and declaration pipeline, load `typescript-monorepo-toolchain`.
 
 ## Hono Module Shape
 

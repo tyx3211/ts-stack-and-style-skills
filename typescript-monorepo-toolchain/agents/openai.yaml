@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript Monorepo Toolchain"
+  short_description: "Design TypeScript workspace builds and package boundaries"
+  default_prompt: "Use $typescript-monorepo-toolchain to design or audit this TypeScript monorepo build, resolution, and declaration workflow."

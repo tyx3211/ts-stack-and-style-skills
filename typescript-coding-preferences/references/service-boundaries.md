@@ -27,10 +27,21 @@ infra:
 Hono route code should stay thin:
 
 ```ts
-const app = new Hono();
+import { RPCHandler } from "@orpc/server/fetch";
 
-app.route("/rpc", createORPCHonoHandler({ router, context: buildContext }));
+const handler = new RPCHandler(router);
+
+app.use("/rpc/*", async (context, next) => {
+  const { matched, response } = await handler.handle(context.req.raw, {
+    prefix: "/rpc",
+    context: await buildContext(context),
+  });
+  if (matched) return context.newResponse(response.body, response);
+  await next();
+});
 ```
+
+This follows the current [official oRPC Hono adapter](https://orpc.dev/docs/adapters/hono). Verify the snippet against the repository-pinned oRPC version; adapter glue is a suggested baseline, not a timeless API or mandatory local abstraction.
 
 Implementation code should depend on contracts and dependencies, not on `Hono.Context`:
 

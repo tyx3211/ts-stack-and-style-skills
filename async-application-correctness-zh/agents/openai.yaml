@@ -1,0 +1,4 @@
+interface:
+  display_name: "异步应用正确性"
+  short_description: "审查 TypeScript 异步命令、进程所有权、队列、事务与外部副作用边界"
+  default_prompt: "Use $async-application-correctness-zh to review this application's async command, process, and side-effect correctness in Chinese."

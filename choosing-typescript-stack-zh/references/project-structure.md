@@ -121,12 +121,14 @@ schema
     "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": false
   }
 }
 ```
 
 如果要从 CommonJS 迁移到 `NodeNext`，应把它当成一项明确任务，而不是顺手清理。
+
+library、shared package、基础设施 package 和边界敏感代码应保持 `skipLibCheck: false`。大型叶子 app 只有在实测并记录性能折中后才能设为 `true`；这样做会扩大对依赖声明文件的信任。workspace 可执行构建图、运行时解析和声明文件流水线应加载 `typescript-monorepo-toolchain-zh`。
 
 ## Hono 模块形态
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript 安全边界"
+  short_description: "审查 TypeScript Web、文件、URL 与 Electron 信任边界"
+  default_prompt: "使用 $typescript-security-boundaries-zh 审查并加固此 TypeScript 安全边界。"

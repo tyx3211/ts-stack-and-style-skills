@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "note": "These prompts document intended routing. The validator checks coverage and structure, not semantic correctness.",
+  "integratedCases": [
+    {
+      "prompt": {
+        "en": "Design a strict agent-driven TypeScript monorepo with shared oRPC contracts, PostgreSQL, a Redis projection, Electron plus a local Node sidecar, and audited type escape hatches.",
+        "zh": "设计一个严格的 agent-driven TypeScript monorepo：共享 oRPC 契约、PostgreSQL、Redis 投影、Electron 加本地 Node sidecar，并审计类型逃生舱。"
+      },
+      "expectedSkills": [
+        "choosing-typescript-stack",
+        "typescript-monorepo-toolchain",
+        "typescript-coding-preferences",
+        "strict-typescript-source-gates",
+        "backend-data-correctness",
+        "postgres-redis-cache-consistency",
+        "async-application-correctness",
+        "typescript-security-boundaries"
+      ],
+      "expectedReferences": [
+        "strict-typescript-source-gates/references/recommended-harness-blueprint.md",
+        "strict-typescript-source-gates/references/additional-unsoundness-and-trust-claims.md",
+        "typescript-monorepo-toolchain/references/agent-driven-reference-blueprint.md",
+        "postgres-redis-cache-consistency/references/protocol-and-testing.md",
+        "typescript-security-boundaries/references/node-electron-boundaries.md"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "skill": "async-application-correctness",
+      "positive": {
+        "en": ["Review Promise ownership, cancellation, retries, and state transitions in this asynchronous workflow."],
+        "zh": ["审查这个异步工作流中的 Promise 所有权、取消、重试和状态转换。"]
+      },
+      "negative": {
+        "en": ["Choose a schema library for a new contract-first HTTP API."],
+        "zh": ["为一个新的契约优先 HTTP API 选择 schema 库。"]
+      }
+    },
+    {
+      "skill": "backend-data-correctness",
+      "positive": {
+        "en": ["Review this Drizzle transaction and Redis invalidation path for concurrency bugs."],
+        "zh": ["审查这个 Drizzle 事务和 Redis 缓存失效流程是否存在并发正确性问题。"]
+      },
+      "negative": {
+        "en": ["Choose between React and Vue for a static marketing site."],
+        "zh": ["为静态营销网站选择 React 还是 Vue。"]
+      }
+    },
+    {
+      "skill": "choosing-typescript-stack",
+      "positive": {
+        "en": ["Choose a TypeScript frontend, backend, contract, database, and queue stack for this SaaS."],
+        "zh": ["为这个 SaaS 选择 TypeScript 前端、后端、契约、数据库和队列技术栈。"]
+      },
+      "negative": {
+        "en": ["Fix the affected-row check in this existing PostgreSQL update."],
+        "zh": ["修复这个现有 PostgreSQL 更新中受影响行数的检查。"]
+      }
+    },
+    {
+      "skill": "postgres-redis-cache-consistency",
+      "positive": {
+        "en": ["Design cache invalidation ordering between PostgreSQL commits and Redis cache-aside writes."],
+        "zh": ["设计 PostgreSQL 提交与 Redis cache-aside 写入之间的缓存失效顺序。"]
+      },
+      "negative": {
+        "en": ["Decide whether a domain value object should be a class or a plain object."],
+        "zh": ["判断领域值对象应该使用 class 还是普通对象。"]
+      }
+    },
+    {
+      "skill": "strict-typescript-source-gates",
+      "positive": {
+        "en": ["Tighten tsconfig, ESLint, pre-push, and CI gates for handwritten TypeScript source."],
+        "zh": ["收紧手写 TypeScript 源码的 tsconfig、ESLint、pre-push 和 CI 门禁。"]
+      },
+      "negative": {
+        "en": ["Compare Hono and Fastify for a new API service."],
+        "zh": ["为一个新 API 服务比较 Hono 和 Fastify。"]
+      }
+    },
+    {
+      "skill": "typescript-coding-preferences",
+      "positive": {
+        "en": ["Refactor this TypeScript service away from hollow manager classes and unsafe assertions."],
+        "zh": ["重构这个 TypeScript 服务，去掉空壳 manager class 和不安全断言。"]
+      },
+      "negative": {
+        "en": ["Configure a remote build cache for all packages in this monorepo."],
+        "zh": ["为这个 monorepo 的所有包配置远程构建缓存。"]
+      }
+    },
+    {
+      "skill": "typescript-monorepo-toolchain",
+      "positive": {
+        "en": ["Set up TypeScript project references, package exports, declaration builds, and task caching in this monorepo."],
+        "zh": ["为这个 monorepo 配置 TypeScript project references、package exports、声明构建和任务缓存。"]
+      },
+      "negative": {
+        "en": ["Review a single Hono handler for error response naming style."],
+        "zh": ["审查单个 Hono handler 的错误响应命名风格。"]
+      }
+    },
+    {
+      "skill": "typescript-security-boundaries",
+      "positive": {
+        "en": ["Threat-model this TypeScript DOM rendering, cookie session, CORS, upload, SSRF, and Electron IPC boundary."],
+        "zh": ["对这个 TypeScript DOM 渲染、Cookie 会话、CORS、文件上传、SSRF 与 Electron IPC 边界做威胁建模。"]
+      },
+      "negative": {
+        "en": ["Configure TypeScript project references and declaration output for an internal workspace package."],
+        "zh": ["为内部 workspace package 配置 TypeScript project references 和声明产物。"]
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 ---
 name: choosing-typescript-stack
-description: Use when choosing or comparing TypeScript project stacks, front-end frameworks, back-end frameworks, API contracts, schema libraries, databases, auth, queues, testing, observability, monorepo layout, or React/Vue/Hono/Elysia/Fastify/NestJS tradeoffs.
+description: Use when choosing or comparing TypeScript project stacks, front-end frameworks, back-end frameworks, API contracts, schema libraries, databases, auth, queues, testing, observability, monorepo shape, or React/Vue/Hono/Elysia/Fastify/NestJS tradeoffs. Use the monorepo-toolchain skill for implementation details.
 ---
 
 # Choosing TypeScript Stack
@@ -37,9 +37,9 @@ Use these defaults unless the project has a documented reason to deviate:
 
 When selecting PostgreSQL, Drizzle, Kysely, Redis, cache, queue, idempotency, or backend data-access patterns, also load `backend-data-correctness`.
 
-## Typecheck Performance Preference
+## Compiler Compatibility Preference
 
-For medium-to-large TypeScript projects, choose a toolchain that can run full-project `tsgo --noEmit --pretty false` by default. This is usually fast and stable enough for local self-checks. If a human developer later says the time is unacceptable and asks for more speed, prefer a fully cached incremental command such as `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`; generally do not make watch mode the default performance strategy.
+Pin the repository compiler and expose a stable `typecheck` script. TypeScript 7 provides the standard `tsc` command; do not preserve old `@typescript/native-preview` or `tsgo` defaults. While TS7 lacks a programmatic API, typescript-eslint, AST tools, Vue/Svelte/Astro/MDX, and some Angular workflows need an explicit TypeScript 6 compatibility API. The official side-by-side alias layout can install TS7 as `@typescript/native` while the package named `typescript` supplies the TS6 API; verify which binary/API each command resolves instead of inferring from package names.
 
 ## Backend Choices
 
@@ -80,7 +80,7 @@ Load [references/schema-contracts.md](references/schema-contracts.md) before dec
 - Keep database entities separate from API responses.
 - Put CPU-heavy tasks in workers and long/background tasks in queues or workflows.
 
-Load [references/project-structure.md](references/project-structure.md) when creating a new monorepo or adding architectural rules to `AGENTS.md`/repo docs.
+Load [references/project-structure.md](references/project-structure.md) when choosing a high-level repository shape or adding architectural rules to `AGENTS.md`/repo docs. When implementing workspace package boundaries, project references, `exports`/`imports`, build pipelines, declarations, task caching, or package publishing, also load `typescript-monorepo-toolchain`.
 
 ## Anti-Defaults
 

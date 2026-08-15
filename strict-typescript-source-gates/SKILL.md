@@ -1,57 +1,59 @@
 ---
 name: strict-typescript-source-gates
-description: Use when defining, tightening, reviewing, or enforcing TypeScript source-code tsconfig, ESLint, npm scripts, git hooks, CI gates, assertion policy, or variance-safety rules for handwritten src code.
+description: Use when writing, reviewing, or enforcing strict handwritten TypeScript source, including tsconfig, ESLint, scripts, hooks, CI, arrays and indexed access, mutable aliases and variance, narrowing across callbacks or await, type guards and assertion functions, overloads, branded types, declarations or augmentations, monkey patches, and TypeScript escape-hatch or release audits.
 ---
 
 # Strict TypeScript Source Gates
 
-## Overview
+## Objective And Scope
 
-For handwritten `src/` TypeScript, treat the compiler, ESLint, package scripts, git hooks, and CI as one hard gate. The goal is to close the usual AI-generated escape hatches: `any`, unsafe assertions, unchecked external input, loose equality, bivariant callback shapes, stale generated files, and builds that skip verification.
+Treat the compiler, lint, tests, package scripts, hooks, CI, and human review as one feedback system. Prefer machine-enforced rules. When TypeScript is intentionally unsound or cannot prove a relation, isolate the trust decision, label it, test it, and inventory it.
 
-## Scope
+Apply the strict policy to handwritten production `src/`. Put tests, fixtures, generated code, migrations, vendored code, and legacy adapters on separate explicit policies; never let their relaxations leak into production.
 
-- Apply these rules to handwritten source code under `src/` or equivalent production source directories.
-- Keep tests, fixtures, mocks, generated code, migrations, and vendored code on separate configs with explicit relaxations.
-- Do not let relaxed test or generated-code rules leak into `src/`.
-- For migration work, isolate weakly typed legacy adapters behind boundary modules instead of weakening the whole project.
+## Load Focused References
 
-## Default Gate
+- Arrays, holes, checked access, and kernels: [references/array-and-index-safety.md](references/array-and-index-safety.md).
+- Mutable widening, variance, aliases, callbacks, and `await`: [references/alias-variance-and-refinement.md](references/alias-variance-and-refinement.md).
+- Predicates, assertions, overloads, brands, declarations, augmentation, and monkey patches: [references/trusted-type-boundaries.md](references/trusted-type-boundaries.md).
+- Escape classification and release inventory: [references/escape-hatch-registry.md](references/escape-hatch-registry.md).
+- Caller-supplied generics, method bivariance, lookup claims, decorators, configuration escapes, and other less-obvious unsoundness: [references/additional-unsoundness-and-trust-claims.md](references/additional-unsoundness-and-trust-claims.md).
+- A non-mandatory but executable TS7/TS6 API, typed-ESLint, audit, and build command baseline: [references/recommended-harness-blueprint.md](references/recommended-harness-blueprint.md).
 
-- Default to full ESLint with cache: run the full source lint target with `--cache` and `--max-warnings=0`.
-- `npm run lint` should lint `src/` fully, not only changed files. Changed-file lint can be an additional fast pre-commit step.
-- `npm run typecheck` should run the project type checker with no emit.
-- `npm run build` must not mean transpile-only. It must include lint, typecheck, required code generation checks, and the build artifact step.
-- `npm run verify` should be the shared command used by agents, humans, pre-push hooks, and CI.
-- If full ESLint becomes too heavy in a large project, first keep the same semantic gate and then experiment with `oxlint` for fast lint classes plus `tsgo` or `tsc --noEmit` for type-aware checks. Do not replace type-aware ESLint rules until parity is proven.
+Also load `backend-data-correctness` for database/Redis/transaction correctness.
 
-Recommended scripts:
+## Required Workflow
 
-```json
-{
-  "scripts": {
-    "lint": "eslint \"src/**/*.{ts,tsx}\" --cache --cache-location .cache/eslint --max-warnings=0",
-    "typecheck": "tsc --noEmit",
-    "build": "npm run lint && npm run typecheck && npm run build:artifact",
-    "verify": "npm run lint && npm run typecheck && npm run test"
-  }
-}
-```
+1. Inspect the installed TypeScript, runtime, module model, configs, and source boundaries.
+2. Confirm each rule is active; do not infer coverage from a preset name.
+3. Implement the smallest changes that close the requested gaps.
+4. Run the same public commands used by agents, hooks, and CI.
+5. For trust-boundary or release work, run `scripts/audit-type-escapes.mjs --deny-unreviewed <paths>`.
+6. Review every escape and every `[SAFETY]:`, `[TRUSTME]:`, or `[INDEX INVARIANT]:` claim.
+7. Report intentional exceptions and checks that remain human-audited.
 
-When a repository uses `tsgo`, keep the same public command names and make the implementation explicit:
+The audit is an inventory heuristic, not alias/effect analysis or a soundness proof.
+
+## Stable Commands
 
 ```json
 {
   "scripts": {
-    "typecheck": "tsgo --noEmit",
-    "verify": "npm run lint && npm run typecheck && npm run test"
+    "lint": "eslint \"src/**/*.{ts,tsx,mts,cts}\" --cache --cache-location .cache/eslint --max-warnings=0",
+    "typecheck": "tsc --noEmit --pretty false",
+    "audit:type-escapes": "node path/to/audit-type-escapes.mjs --deny-unreviewed src",
+    "build:artifact": "<framework-or-package artifact command>",
+    "verify": "npm run lint && npm run typecheck && npm run audit:type-escapes && npm run test && npm run build:artifact",
+    "build": "npm run verify"
   }
 }
 ```
 
-## TSConfig Baseline
+In this recommended command graph, `build:artifact` is emit/bundle work, `verify` is the aggregate verdict, and public `build` aliases `verify` without recursion. A framework may keep artifact-only `build`, but then CI and agents must use `verify` as the verdict and never describe raw transpilation as correctness. Changed-file lint may supplement but never replace full lint.
 
-Use this as the strict baseline for new NodeNext server-side packages unless the framework owns the config or the package is intentionally different:
+## Compiler Baseline
+
+Use this for new NodeNext server packages unless the target requires a documented difference:
 
 ```jsonc
 {
@@ -62,362 +64,101 @@ Use this as the strict baseline for new NodeNext server-side packages unless the
     "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "types": ["node"],
-
     "strict": true,
     "noImplicitAny": true,
     "strictFunctionTypes": true,
     "strictNullChecks": true,
     "useUnknownInCatchVariables": true,
-
     "exactOptionalPropertyTypes": true,
     "noUncheckedIndexedAccess": true,
     "noPropertyAccessFromIndexSignature": true,
-
     "noImplicitOverride": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "noUncheckedSideEffectImports": true,
     "forceConsistentCasingInFileNames": true,
-
-    "skipLibCheck": false,
-    "rootDir": "src",
-    "outDir": "dist",
-    "sourceMap": true
-  },
-  "include": ["src/**/*.ts"]
+    "skipLibCheck": false
+  }
 }
 ```
 
-Notes:
+Keep policy flags explicit even when the installed version defaults them on. Prefer `skipLibCheck:false` for libraries, shared packages, contracts, infrastructure, and trusted boundaries. An app may use `true` only as a measured, documented declaration-trust compromise.
 
-- Keep `strict` and `noImplicitAny` explicit even when a TypeScript version defaults them on.
-- `strictFunctionTypes` is included by `strict`, but keep it explicit because variance safety is part of the policy.
-- In the NodeNext module model, treat `esModuleInterop: true` as the default mental model for CommonJS interop and document any exception explicitly.
-- Prefer `skipLibCheck: false` for libraries, shared packages, infrastructure packages, and boundary-sensitive code. Large apps may use `skipLibCheck: true` only as a documented performance compromise; it trusts declaration-file boundary types and skips many internal `.d.ts` errors.
-- If `erasableSyntaxOnly` is available and the project wants Node-native TypeScript compatibility, consider enabling it, but treat the migration as explicit because enums, namespaces, and parameter properties are affected.
+Use TypeScript 7 `tsc` as the authoritative checker. TS7.0 has no programmatic compiler API, so tools such as typescript-eslint and this skill's AST inventory require a pinned TypeScript 6 compatibility API. The current official side-by-side baseline aliases TS7 as `@typescript/native` and `@typescript/typescript6` as the package named `typescript`; it must be verified rather than inferred. Do not use obsolete `@typescript/native-preview`/`tsgo` layouts or a global fallback. Embedded-language tooling may use the same explicit TS6 compatibility track, but it is not authoritative for ordinary `.ts`. See the recommended harness blueprint for exact wiring and permitted alternatives.
 
 ## ESLint Baseline
 
-For `src/`, enforce at least:
+Enable type-aware lint for production source and confirm each rule exists in the installed version. The following is a policy fragment, not a complete flat-config installation; the final config must include pinned imports, a project-aware parser/project service, file policies, and failing fixtures as described in the recommended harness blueprint:
 
 ```js
-export default [
-  {
-    files: ["src/**/*.{ts,tsx}"],
-    rules: {
-      eqeqeq: ["error", "always"],
-      "no-implicit-coercion": "error",
-      "@typescript-eslint/no-explicit-any": "error",
-      "@typescript-eslint/no-unsafe-assignment": "error",
-      "@typescript-eslint/no-unsafe-argument": "error",
-      "@typescript-eslint/no-unsafe-call": "error",
-      "@typescript-eslint/no-unsafe-member-access": "error",
-      "@typescript-eslint/no-unsafe-return": "error",
-      "@typescript-eslint/strict-boolean-expressions": "error",
-      "@typescript-eslint/no-unnecessary-type-assertion": "error",
-      "@typescript-eslint/no-unsafe-type-assertion": "error",
-      "@typescript-eslint/method-signature-style": ["error", "property"]
-    }
+export default [{
+  files: ["src/**/*.{ts,tsx,mts,cts}"],
+  rules: {
+    eqeqeq: ["error", "always"],
+    "no-implicit-coercion": "error",
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unsafe-assignment": "error",
+    "@typescript-eslint/no-unsafe-argument": "error",
+    "@typescript-eslint/no-unsafe-call": "error",
+    "@typescript-eslint/no-unsafe-member-access": "error",
+    "@typescript-eslint/no-unsafe-return": "error",
+    "@typescript-eslint/no-unsafe-type-assertion": "error",
+    "@typescript-eslint/no-unnecessary-type-assertion": "error",
+    "@typescript-eslint/no-non-null-assertion": "error",
+    "@typescript-eslint/strict-boolean-expressions": "error",
+    "@typescript-eslint/method-signature-style": ["error", "property"],
+    "@typescript-eslint/no-array-delete": "error",
+    "@typescript-eslint/no-for-in-array": "error",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/no-misused-promises": ["error", { "checksVoidReturn": true }],
+    "@typescript-eslint/switch-exhaustiveness-check": "error",
+    "@typescript-eslint/only-throw-error": "error",
+    "@typescript-eslint/use-unknown-in-catch-callback-variable": "error",
+    "@typescript-eslint/no-unsafe-declaration-merging": "error",
+    "@typescript-eslint/unbound-method": "error",
+    "@typescript-eslint/unified-signatures": "error"
   }
-];
+}];
 ```
 
-For source directories that define domain models, shared libraries, core utilities, protocol layers, or other boundary-sensitive code, also enforce readonly parameter types:
+Use `consistent-type-assertions`, `no-restricted-syntax`, or a local AST rule to allow `as const` but reject other assertions by default. `no-unsafe-type-assertion` alone does not ban every `as`. Use `prefer-readonly-parameter-types:error` in core/domain/lib/shared/protocol code; it may be `warn` in measured framework-heavy glue. `readonly` is shallow and does not prove ownership.
 
-```js
-export default [
-  {
-    files: ["src/**/*.{ts,tsx}"],
-    rules: {
-      "@typescript-eslint/prefer-readonly-parameter-types": "warn"
-    }
-  },
-  {
-    files: ["src/{core,domain,lib,shared,utils,protocols}/**/*.{ts,tsx}"],
-    rules: {
-      "@typescript-eslint/prefer-readonly-parameter-types": "error"
-    }
-  }
-];
-```
+## Non-Negotiable Source Rules
 
-If this rule is too noisy in framework-heavy UI or application glue code, keep it as `warn` or omit it there. Do not weaken the core rule for boundary-sensitive source code.
+- External input starts as `unknown` and crosses a runtime parser/schema.
+- Permit `as const`; prefer `satisfies`. Other assertions are exceptions, never validation.
+- Ban `JSON.parse(...) as T`, `as unknown as T`, and unvalidated SDK/IPC/database/network values.
+- Treat caller-supplied generic runtime results such as `json<T>()`, `query<T>()`, `invoke<T>()`, and `querySelector<T>()` as remote assertions unless tied to runtime validation or generated contract evidence.
+- Use discriminated unions and exhaustive switches for finite states.
+- Use function properties at assignable callback/handler/visitor/comparer/middleware/listener boundaries. Class implementations may remain prototype methods.
+- Do not narrow override parameters; `noImplicitOverride` does not close method bivariance.
+- Do not pass bare methods as callbacks.
+- Public collections are readonly by default; copy before mutating a widened collection.
+- Do not retain a mutable property refinement across unknown callbacks, escaping closures, event turns, or `await`; snapshot stable immutable data or revalidate.
+- Prefer factories over generic constructor signatures in plugin/registry/DI boundaries.
+- Forbid ordinary production monkey patches and ambient promises about runtime behavior.
 
-For Drizzle projects, also enable Drizzle ESLint rules when available:
+## Review Labels
 
-```js
-export default [
-  {
-    files: ["src/**/*.{ts,tsx}"],
-    rules: {
-      "drizzle/enforce-delete-with-where": "error",
-      "drizzle/enforce-update-with-where": "error"
-    }
-  }
-];
-```
-
-If the plugin cannot be used, enforce the same policy with local lint rules or review gates. Detailed database and Redis correctness rules belong in `backend-data-correctness`.
-
-Assertion policy:
-
-- `as const` is allowed.
-- `satisfies` is preferred for checking literals while preserving precise inference.
-- Other `as` assertions are forbidden in handwritten `src/` by default. Use guards, discriminated unions, schema parsing, or typed adapter functions.
-- The assertion policy must be enforced mechanically through `@typescript-eslint/consistent-type-assertions`, `no-restricted-syntax`, or a local rule that allows `as const` but rejects other `as` assertions.
-- Non-null assertions (`value!`) require a local, obvious invariant or a narrow documented interoperability reason.
-- `JSON.parse(...) as T`, `payload.value as number`, and `as unknown as T` are policy failures unless isolated inside a boundary adapter with runtime validation.
-
-If the stock ESLint rule set cannot express "allow `as const`, reject other assertions" cleanly for the repository's plugin version, add a small local rule or `no-restricted-syntax` policy instead of weakening the rule.
-
-## Boundary Validation
-
-- External input starts as `unknown`.
-- Narrow with schema parsing, `typeof`, discriminated unions, or custom type guards before use.
-- Validate numbers with both type and value checks: `typeof value === "number" && Number.isFinite(value)`.
-- Keep database rows, API responses, and UI view models separate when their shapes differ.
-- Generated OpenAPI clients, oRPC contracts, and schema-derived clients must be regenerated and diff-checked in CI.
-
-## Variance And Unsoundness Rules
-
-TypeScript keeps some unsound behavior for JavaScript compatibility. `strictFunctionTypes` helps, but method and constructor declarations still preserve historical bivariance holes. TypeScript 6.0.3 still allows class-to-class structural assignment with prototype methods in cases that can crash at runtime. Project code must close those holes by style, lint rules, and review gates.
-
-Use function properties for callback-like capabilities at assignable type boundaries:
+Follow a Rust-`unsafe`-inspired philosophy: necessary escape hatches are welcome when they are the clearest implementation, but their trust boundary must be explicit, narrow, mechanically inventoried, evidence-backed, and easy to review. Do not hide flexibility behind innocent-looking helpers or fake guards. These labels are a project audit convention, not a claim that TypeScript provides Rust's compiler-enforced `unsafe` boundary.
 
 ```ts
-type Handler<T> = {
-  handle: (value: T) => void;
-};
+// [SAFETY]: <runtime evidence and why it establishes the claimed invariant>
+// [TRUSTME]: <external declaration/runtime contract, owner, and verification>
+// [INDEX INVARIANT]: <bounds, density, length relation, and preservation argument>
 ```
 
-Avoid method signatures for generic callback boundaries:
+Keep exceptions narrow and link stable files plus exported symbols, not line numbers alone. A label is review evidence, not proof.
 
-```ts
-interface Handler<T> {
-  handle(value: T): void;
-}
-```
+Forbid `@ts-ignore` and `@ts-nocheck`. A rare `@ts-expect-error` is single-line, tracked, and fails when unused. Lint disables name one rule, cover the minimum range, carry a label, and are reported when unused.
 
-Class implementations may still use prototype methods:
+## Performance And Review
 
-```ts
-class DogHandler implements Handler<Dog> {
-  handle(value: Dog): void {
-    value.bark();
-  }
-}
-```
+Default to full cached ESLint plus full `tsc --noEmit`. Oxlint may add a fast path, but retain ESLint for uncovered semantic rules. Prove coverage using deliberately failing fixtures for assertions, `any`, sparse arrays, method-shaped boundaries, Promise misuse, declarations, and unbound methods. Optimize only after measurement and human approval; watch state is not a release verdict.
 
-Do not rewrite ordinary implementation functions into arrow/function properties just to satisfy the boundary rule. Plain function declarations, local helpers, object methods, and class prototype methods remain idiomatic. Class function fields are per-instance functions, not prototype methods, and should be reserved for callback fields that need stable `this` binding.
-
-Assignment target rule: with `strictFunctionTypes: true`, the decisive factor is the target member shape, not whether the outer type is a `class`, `interface`, or `type`. If the assignment target says `handle: (value: T) => void`, TypeScript applies the stricter function-parameter check. If the assignment target says `handle(value: T): void`, the historical method bivariance hole can remain even when the source member is an arrow/function property. This is why assignable `interface` and `type` boundaries must be linted into function-property form.
-
-Use this for any boundary that can appear as an assignment target, parameter type, return type, registry slot, dependency token, or exported contract:
-
-```ts
-interface Handler<T> {
-  handle: (value: T) => void;
-}
-```
-
-Do not use this for assignable boundaries:
-
-```ts
-interface Handler<T> {
-  handle(value: T): void;
-}
-```
-
-Rules:
-
-- Callback, handler, visitor, comparer, middleware, and listener shapes should use function properties, not method signatures.
-- Any `interface` or `type` used as an assignable abstraction boundary must put function members in function-property form. `@typescript-eslint/method-signature-style: ["error", "property"]` is mandatory for this reason.
-- Unrelated concrete class types must not be used as abstract boundaries through structural assignment. Use `interface` or `type` boundaries with function properties instead.
-- Public input collections default to `readonly T[]` or `ReadonlyArray<T>`.
-- Only use mutable `T[]` when the function owns the array or explicitly mutates it as part of its contract.
-- Do not widen a narrow mutable array by aliasing it, such as assigning `Dog[]` to `Animal[]`. If a mutable widened array is needed, copy first: `const animals: Animal[] = [...dogs]`.
-- Do not expose mutable arrays in public APIs unless ownership is explicit.
-- Prefer small capability interfaces and composition over inheritance trees.
-- For plugin registries, dependency containers, ORM factories, and other generic creation boundaries, prefer factory functions over constructor signatures: `create: (config: Config) => Plugin` instead of `new (config: Config) => Plugin`.
-- Class methods are acceptable for intrinsic implementation details, but should not be used as generic callback boundary shapes.
-- Do not pass bare class methods as callbacks. Use a wrapper such as `(value) => service.handle(value)` or a deliberately bound callback field.
-- `noImplicitOverride` is not a variance-safety switch. It only requires the `override` keyword; it does not make prototype method parameters strictly contravariant.
-- Overrides must not narrow parameter types from the base contract. If the subclass handles a narrower case specially, keep the base signature and narrow inside the method body.
-
-Base-class polymorphism stance:
-
-- Default recommendation: prefer composition plus small `interface` or `type` capability boundaries. This is the project style because it gives clearer assignment gates and avoids inheritance-driven architecture.
-- When `typescript-coding-preferences` is also in effect, treat inheritance as a style violation for new design: write Go-like TypeScript with plain data, functions, small interfaces, and composition; do not introduce inheritance unless a framework/library or existing repository convention requires it.
-- Allowed with justification: an `abstract class` or base class may be used as a polymorphic boundary when it represents a real stable `is-a` relationship, shared invariant, protected state, template method, or framework/library requirement.
-- Still a refactoring candidate: even when a base-class boundary is well disciplined, treat it as acceptable rather than preferred. Under this project's composition-over-inheritance bias, optimize it toward composition plus capability interfaces when the base class stops carrying real invariant or runtime value.
-- Required discipline for base classes: use `override`, do not narrow method parameters, keep subclass contracts at least as wide as the base contract, and narrow inside method bodies when needed.
-- Prefer `abstract` base classes or base classes with real `private`/`protected` members when the boundary is intentionally nominal-ish. A public-method-only base type is easier to accidentally treat as a structural class boundary.
-
-Forbidden unrelated class-to-class structural boundary:
-
-```ts
-class AnimalHandler {
-  handle(value: Animal): void {}
-}
-
-class DogHandler {
-  handle(value: Dog): void {
-    value.bark();
-  }
-}
-
-const handler: AnimalHandler = new DogHandler(); // forbidden: may pass typecheck and fail at runtime
-```
-
-Default recommended boundary shape:
-
-```ts
-interface Handler<T> {
-  handle: (value: T) => void;
-}
-
-class DogHandler implements Handler<Dog> {
-  handle(value: Dog): void {
-    value.bark();
-  }
-}
-
-const handler: Handler<Animal> = new DogHandler(); // rejected by strictFunctionTypes
-```
-
-Acceptable but non-default base-class polymorphism:
-
-```ts
-abstract class AnimalHandler {
-  protected readonly _handlerBrand!: void;
-
-  abstract handle(value: Animal): void;
-}
-
-class DogAwareHandler extends AnimalHandler {
-  override handle(value: Animal): void {
-    if (value instanceof Dog) {
-      value.bark();
-    }
-  }
-}
-```
-
-Forbidden override narrowing:
-
-```ts
-class BaseHandler {
-  handle(value: Animal): void {}
-}
-
-class DerivedHandler extends BaseHandler {
-  override handle(value: Dog): void {
-    value.bark();
-  }
-}
-```
-
-Required override shape:
-
-```ts
-class DerivedHandler extends BaseHandler {
-  override handle(value: Animal): void {
-    if (value instanceof Dog) {
-      value.bark();
-    }
-  }
-}
-```
-
-Rare exception: if a concrete class must be protected from structural class-to-class assignment, add a `private` or `protected` brand. Do not spread brands everywhere; the default abstraction route remains `interface` or `type`.
-
-## Hooks And CI
-
-- `pre-commit`: run formatting and fast checks; changed-file lint may run here, but it does not replace full lint.
-- `pre-push`: run `npm run verify`.
-- CI: run a clean install, code generation consistency checks, full lint, full typecheck, tests, build, and artifact checks.
-- Hooks should call shared package scripts. Do not hide different logic inside hook files.
-- Every failure message should point to the command the agent should run locally.
-
-## Large-Project Performance Path
-
-Default remains full ESLint plus cache. If the project becomes too large:
-
-1. Keep `npm run verify` semantics stable.
-2. For medium-to-large repositories, default to full-project `tsgo --noEmit --pretty false` from `@typescript/native-preview` when the repository has migrated its `tsconfig` options. This is usually fast and stable enough, including for large source edits. Keep `tsc --noEmit` only when the project is not TS7-compatible yet.
-3. Add `oxlint --type-aware --type-check` with `oxlint-tsgolint` as the fast primary lint/type diagnostic path. This can cover most high-value type-aware rules and TypeScript compiler diagnostics.
-4. Keep cached ESLint only for rules that `oxlint` does not currently cover or cannot match semantically. A common remaining rule is `@typescript-eslint/method-signature-style: ["error", "property"]`.
-5. Prove parity by intentionally testing known violations: explicit `any`, unsafe assignment, unsafe argument, forbidden assertion, method-signature callback, loose equality, and stale generated files.
-
-Do not trade strictness for speed silently. Any faster path must fail on the same policy violations that matter for `src/`.
-
-For large repositories, use a tiered workflow:
-
-- AI-agent self-check during ordinary edits: run `oxlint --type-aware --type-check`, run the cached ESLint fallback rules, and run full-project `tsgo --noEmit --pretty false`. This should stay the default even for medium-to-large TypeScript repositories because full-project `tsgo` is usually fast enough and easier to trust than watch state.
-- If full-project `tsgo` becomes genuinely unacceptable and the human developer explicitly asks for more speed, first try a fully cached incremental check such as `tsgo --noEmit --incremental --tsBuildInfoFile .cache/tsgo.tsbuildinfo --pretty false`. Measure it against full-project `tsgo` after representative leaf, central-component, and mixed edits; do not assume incremental wins for central or large patches.
-- `pre-commit`: run formatting, full or scoped `oxlint`, cached ESLint fallback rules, and direct `tsgo --noEmit --pretty false` unless the repository has deliberately adopted a measured incremental command.
-- `pre-push` and CI: run the full shared `npm run verify`, including codegen checks, lint, typecheck, tests, and build.
-
-Do not let an AI agent unilaterally move cached ESLint fallback rules out of routine self-checks. Only discuss this optimization when a human developer says the checks are too slow or asks to optimize the workflow. In that case, ask or propose a small measured change, such as moving the fallback to `pre-commit`/`pre-push`, but keep the stricter default until the human accepts the tradeoff. Full-source feedback is usually better than changed-file-only lint during AI iteration.
-
-Do not treat third-party repository results as direct bug findings unless the rule set matches that repository's policy. Missing dependencies and project-style conflicts such as Chai `no-unused-expressions` are toolchain findings, not automatic correctness bugs. Valid migration findings include TS7 errors such as removed `tsconfig` options reported by `tsgo`.
-
-Recommended package scripts for a TS7/Oxlint project:
-
-```json
-{
-  "scripts": {
-    "lint:ox": "oxlint src --type-aware --type-check --max-warnings=0",
-    "lint": "eslint \"src/**/*.{ts,tsx}\" --cache --cache-location .cache/eslint --max-warnings=0",
-    "typecheck": "tsgo --noEmit --pretty false",
-    "verify": "npm run lint:ox && npm run lint && npm run typecheck && npm run test && npm run build:artifact"
-  }
-}
-```
-
-When `lint` exists only for `method-signature-style`, keep the ESLint config intentionally tiny instead of running a duplicate full type-aware ESLint stack.
-
-Watch mode is not the default performance path. A Windows-friendly `tsgo --watch --noEmit` status script can still be useful as an optional background status source when a repository has measured it and deliberately wants it. In that case, prefer a wrapper that:
-
-- starts `node_modules/@typescript/native-preview/bin/tsgo.js --noEmit --watch --pretty false` in the background;
-- redirects output to `.cache/tsgo-watch.log`;
-- records the long-lived wrapper PID in `.cache/tsgo-watch.pid`;
-- provides `status` to print the latest `Found 0 errors` summary and recent `error TSxxxx` diagnostics;
-- provides `stop` using `taskkill /PID <pid> /T /F` on Windows.
-
-The important watch command is `tsgo --watch --noEmit`; watch mode does not imply `noEmit`. Pass `--noEmit` explicitly unless `noEmit` is guaranteed in `tsconfig`.
-
-## Review Checklist
-
-- Does `src/` forbid explicit and implicit `any`?
-- Are type assertions limited to `as const`, `satisfies`, or documented boundary adapters with runtime validation?
-- Does lint run with full source scope, cache, and `--max-warnings=0`?
-- Does `build` include lint and typecheck?
-- Do hooks and CI call the same shared scripts?
-- Are tests and generated code separated from `src/` policy?
-- Are callback-like interfaces using function properties?
-- Are assignable `interface` and `type` boundaries using function properties on the target side?
-- If `typescript-coding-preferences` is active, did new code avoid inheritance for Go-like TypeScript style unless framework/library or repository constraints require it?
-- Are base-class polymorphism boundaries justified by real `is-a`, invariant, protected state, template method, or framework requirements rather than reuse convenience?
-- Are public array inputs readonly by default?
-- Are mutable widened arrays copied instead of aliased?
-- Are constructor types avoided for generic plugin or registry boundaries?
-
-## Variance Review Pass
-
-Run this focused review periodically and before accepting large AI-generated TypeScript changes:
-
-- Search for concrete class-to-class structural assignment, especially `const x: SomeClass = new OtherClass()`.
-- Search for `override` methods whose parameter types are narrower than the base method.
-- Search for base classes that act only as abstract capability boundaries and can be optimized toward composition plus `interface` or `type`.
-- Search for method-shaped generic boundaries such as `handle(value: T): void`, `compare(a: T, b: T): number`, or `visit(node: T): void`.
-- Search for assignable `interface` or `type` targets whose function members are methods instead of function properties.
-- Search for mutable array widening aliases such as `const animals: Animal[] = dogs`.
-- Search for constructor types used as generic registry or dependency-injection boundaries.
-- Search for bare method references passed as callbacks, such as `emitter.on("x", service.handle)`.
+Before acceptance verify: full shared commands pass with pinned local tool versions; configuration relaxations and source escapes are inventoried; arrays are dense and checked; mutable widening aliases are absent; refinements are revalidated after effects; callback boundaries use function properties; generic runtime claims are validated or labeled; and every fast path catches the policy fixtures.
