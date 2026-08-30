@@ -126,7 +126,7 @@ export default [{
 }];
 ```
 
-Use `consistent-type-assertions`, `no-restricted-syntax`, or a local AST rule to allow `as const` but reject other assertions by default. `no-unsafe-type-assertion` alone does not ban every `as`. Use `prefer-readonly-parameter-types:error` in core/domain/lib/shared/protocol code; it may be `warn` in measured framework-heavy glue. `readonly` is shallow and does not prove ownership.
+Use `consistent-type-assertions`, `no-restricted-syntax`, or a local AST rule to allow `as const` but reject other assertions by default. `no-unsafe-type-assertion` alone does not ban every `as`. `prefer-readonly-parameter-types` recursively demands readonly nested values, so enable it as `error` only in deliberately immutable data modules with measured third-party allowlists; use `warn` or disable it in ordinary domain/service/framework code. Where a function contract forbids direct input mutation, `no-param-reassign` with `props:true` is useful but does not catch mutating method calls or aliases. Use explicit readonly collection types and review ownership separately.
 
 ## Non-Negotiable Source Rules
 
@@ -138,7 +138,8 @@ Use `consistent-type-assertions`, `no-restricted-syntax`, or a local AST rule to
 - Use function properties at assignable callback/handler/visitor/comparer/middleware/listener boundaries. Class implementations may remain prototype methods.
 - Do not narrow override parameters; `noImplicitOverride` does not close method bivariance.
 - Do not pass bare methods as callbacks.
-- Public collections are readonly by default; copy before mutating a widened collection.
+- Public collection inputs and published collection views are readonly by default; copy before mutating a widened collection. Array-slot readonly does not make elements readonly, and readonly map/set views do not freeze backing storage.
+- Published immutable-by-contract data uses explicit readonly fields or a clearly scoped shallow `Readonly<{ ... }>` after construction. Prefer the form that is easiest to audit; do not duplicate complete mutable and readonly shapes without a real construction lifecycle. Builders, accumulators, caches, stateful classes, framework objects, generated types, and in-progress transforms remain mutable when mutation is part of their contract.
 - Do not retain a mutable property refinement across unknown callbacks, escaping closures, event turns, or `await`; snapshot stable immutable data or revalidate.
 - Prefer factories over generic constructor signatures in plugin/registry/DI boundaries.
 - Forbid ordinary production monkey patches and ambient promises about runtime behavior.

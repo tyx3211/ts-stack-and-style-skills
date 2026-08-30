@@ -1,6 +1,6 @@
 ---
 name: typescript-coding-preferences-zh
-description: Use when writing, refactoring, or reviewing TypeScript code with Chinese workflow preferences around style, schema boundaries, class usage, type safety, local hooks, and avoiding Java/NestJS-style over-OOP patterns.
+description: Use when writing, refactoring, or reviewing TypeScript code with Chinese workflow preferences around style, readonly and immutability modeling, schema boundaries, class usage, type safety, local hooks, and avoiding Java/NestJS-style over-OOP patterns.
 ---
 
 # TypeScript 编码偏好
@@ -40,6 +40,8 @@ description: Use when writing, refactoring, or reviewing TypeScript code with Ch
 5. 对于 repo / client / service 这类只会存在少量实例的对象，factory（工厂）返回方法对象是可接受的；但不要把这种模式复制到大批量数据数组上。
 
 当需要在 `class`、普通对象、operations module（操作模块）和 tag-based dispatch（标签分发）之间做选择时，请读取 [references/object-modeling.md](references/object-modeling.md)。
+
+处理 readonly field、readonly array/tuple/map/set、immutable publication、builder-to-snapshot 生命周期或 `ReadonlyDeep` 选择时，请读取 [references/immutability-and-readonly.md](references/immutability-and-readonly.md)。把 readonly 当作显式局部 capability view；不得描述成 ownership、runtime freeze、alias isolation 或 Rust borrow guarantee。
 
 ## Interface 规则
 

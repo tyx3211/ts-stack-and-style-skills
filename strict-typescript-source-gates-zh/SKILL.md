@@ -112,7 +112,7 @@ export default [{ files: ["src/**/*.{ts,tsx,mts,cts}"], rules: {
 } }];
 ```
 
-另用 `consistent-type-assertions`、`no-restricted-syntax` 或本地 AST rule 允许 `as const`、默认拒绝其他 assertion；`no-unsafe-type-assertion` 不能单独禁完。core/domain/lib/shared/protocol 使用 `prefer-readonly-parameter-types:error`；framework-heavy glue 可经实测改 `warn`。`readonly` 是浅层约束，不证明 ownership。
+另用 `consistent-type-assertions`、`no-restricted-syntax` 或本地 AST rule 允许 `as const`、默认拒绝其他 assertion；`no-unsafe-type-assertion` 不能单独禁完。`prefer-readonly-parameter-types` 会递归要求 nested value readonly，因此只有在刻意 immutable 的 data module 中，配合实测第三方 allowlist 才设为 `error`；普通 domain/service/framework code 使用 `warn` 或关闭。函数契约禁止直接修改输入时，`no-param-reassign` 配 `props:true` 有用，但抓不到 mutating method call 或 alias；还必须使用显式 readonly collection type，并单独审查 ownership。
 
 ## 不可协商源码规则
 
@@ -124,7 +124,8 @@ export default [{ files: ["src/**/*.{ts,tsx,mts,cts}"], rules: {
 - 可赋值 callback/handler/visitor/comparer/middleware/listener 边界使用 function property；class 实现可保留 prototype method。
 - override 不缩窄参数；`noImplicitOverride` 不能关闭 method bivariance。
 - 不把 bare method 当 callback。
-- 公共 collection 默认 readonly；扩宽后需要修改时先 copy。
+- 公共 collection input 与已发布 collection view 默认 readonly；扩宽后需要修改时先 copy。Array slot readonly 不会让 element readonly，readonly map/set view 也不会 freeze backing storage。
+- 按 immutable contract 发布的数据在构造完成后使用显式 readonly field，或边界清楚的浅层 `Readonly<{ ... }>`。优先最易审计的形式；没有真实 construction lifecycle 时，不得重复维护完整 mutable/readonly shape。Builder、accumulator、cache、stateful class、framework object、generated type 和 in-progress transform 在 mutation 属于契约时保持 mutable。
 - 不跨 unknown callback、escaping closure、事件轮次或 `await` 保留 mutable property refinement；应快照稳定 immutable data 或重验。
 - plugin/registry/DI 边界优先 factory，不用 generic constructor signature。
 - 普通 production 禁止 monkey patch 和对 runtime 行为的 ambient 承诺。

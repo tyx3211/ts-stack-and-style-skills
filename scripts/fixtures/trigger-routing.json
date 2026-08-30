@@ -74,8 +74,14 @@
     {
       "skill": "strict-typescript-source-gates",
       "positive": {
-        "en": ["Tighten tsconfig, ESLint, pre-push, and CI gates for handwritten TypeScript source."],
-        "zh": ["收紧手写 TypeScript 源码的 tsconfig、ESLint、pre-push 和 CI 门禁。"]
+        "en": [
+          "Tighten tsconfig, ESLint, pre-push, and CI gates for handwritten TypeScript source.",
+          "Configure auditable gates for readonly collection boundaries, mutable aliases, and parameter mutation."
+        ],
+        "zh": [
+          "收紧手写 TypeScript 源码的 tsconfig、ESLint、pre-push 和 CI 门禁。",
+          "为只读集合边界、可变别名与参数突变配置可审计门禁。"
+        ]
       },
       "negative": {
         "en": ["Compare Hono and Fastify for a new API service."],
@@ -85,8 +91,14 @@
     {
       "skill": "typescript-coding-preferences",
       "positive": {
-        "en": ["Refactor this TypeScript service away from hollow manager classes and unsafe assertions."],
-        "zh": ["重构这个 TypeScript 服务，去掉空壳 manager class 和不安全断言。"]
+        "en": [
+          "Refactor this TypeScript service away from hollow manager classes and unsafe assertions.",
+          "Design readonly fields, readonly collection inputs, immutable publication, and a justified ReadonlyDeep boundary for this TypeScript model."
+        ],
+        "zh": [
+          "重构这个 TypeScript 服务，去掉空壳 manager class 和不安全断言。",
+          "为这个 TypeScript 模型设计 readonly 字段、只读集合输入、不可变发布与有理由的 ReadonlyDeep 边界。"
+        ]
       },
       "negative": {
         "en": ["Configure a remote build cache for all packages in this monorepo."],

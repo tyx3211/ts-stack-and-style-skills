@@ -1,6 +1,6 @@
 ---
 name: typescript-coding-preferences
-description: Use when writing, refactoring, or reviewing TypeScript code where style, encapsulation, class/interface usage, schema boundaries, ESLint rules, local hooks, any/unknown/assertion policy, Hono/oRPC handlers, performance-sensitive object modeling, or avoiding Java/NestJS-style over-OOP matters.
+description: Use when writing, refactoring, or reviewing TypeScript code where style, encapsulation, class/interface usage, readonly and immutability modeling, schema boundaries, ESLint rules, local hooks, any/unknown/assertion policy, Hono/oRPC handlers, performance-sensitive object modeling, or avoiding Java/NestJS-style over-OOP matters.
 ---
 
 # TypeScript Coding Preferences
@@ -40,6 +40,8 @@ Use this order before adding a new type or abstraction. Do not add a class, serv
 5. For service/repo/client objects that exist in small quantities, factory-returned method objects are acceptable; do not copy that pattern onto large data arrays.
 
 Load [references/object-modeling.md](references/object-modeling.md) when choosing between `class`, plain object, operations modules, and tag-based dispatch.
+
+For readonly fields, readonly arrays/tuples/maps/sets, immutable publication, builder-to-snapshot lifecycles, and `ReadonlyDeep` decisions, load [references/immutability-and-readonly.md](references/immutability-and-readonly.md). Use readonly as an explicit local capability view; never describe it as ownership, runtime freeze, alias isolation, or a Rust borrow guarantee.
 
 ## Interface Rules
 

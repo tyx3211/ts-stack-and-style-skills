@@ -16,6 +16,18 @@ narrow.value.toUpperCase();
 
 `readonly` 只是浅层编译期视图；其他 alias 仍可修改底层对象。它不是 ownership、deep immutability 或 runtime freeze。
 
+## Readonly Capability 层级
+
+稳定 binding 使用 `const`；控制 property 重新赋值使用 `readonly field`；控制 array slot 使用 `readonly T[]` 或 readonly tuple；只查询 collection 使用 `ReadonlyMap`/`ReadonlySet`。它们仍是同一个 runtime value，只是减少了静态 mutation capability。Array element、map value、set element 与 nested referent 保留自身可变性；另一个 alias 仍可修改同一 storage。
+
+对按 immutable contract 发布的 DTO、config snapshot、protocol/event payload data 和 published AST snapshot，在构造完成后优先显式 readonly field。不得机械套给 builder、accumulator、cache、stateful class、framework object、generated type 或契约本来包含 mutation 的 transform。
+
+构造阶段可以正常初始化 readonly field。Property-level 可见性有助审查时使用显式字段；所有顶层字段策略一致且 wrapper 能减少噪音时，使用浅层 `Readonly<{ ... }>`。优先局部 mutable construction 后返回 readonly type，不要重复完整 mutable/readonly shape；只有真实多阶段 lifecycle 才引入 draft 或 builder。`Readonly<T>` 不会让 nested collection readonly、切断 alias，或阻止 class method 修改 internal state。
+
+不要默认把 arbitrary parameter 变成递归 `ReadonlyDeep`。只有 owned 或明确发布的 immutable data tree 才使用锁定并测试过的 deep-readonly 实现，并用 consumer test 覆盖 map、set、tuple、array、function、class、schema 和第三方类型。Runtime immutability 必须另外建立 ownership/copy/freeze 或 persistent-data contract。
+
+`prefer-readonly-parameter-types` 会递归检查 nested value，可能重新制造 deep-readonly contagion。它只应在刻意 immutable 的 module 中配合实测 allowlist 选择性设为 error，不能作为全 production blanket gate。`no-param-reassign` 配 `props:true` 只抓 direct assignment/delete/update，抓不到 `array.push()`、其他 mutating method、escaping alias 或间接 effect。必须把窄 lint、显式类型和人工 alias review 组合起来。
+
 ## 函数、方法与 Effect
 
 `strictFunctionTypes` 收紧普通函数类型，但 method/constructor declaration 来源仍有历史 bivariance。可赋值边界写 function property：

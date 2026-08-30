@@ -1,4 +1,4 @@
 interface:
   display_name: "TypeScript Coding Preferences"
-  short_description: "TypeScript style, modeling, and boundary defaults"
+  short_description: "TypeScript style, readonly modeling, and boundaries"
   default_prompt: "Use $typescript-coding-preferences to implement or review TypeScript code with the preferred style."

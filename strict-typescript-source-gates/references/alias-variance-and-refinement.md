@@ -16,6 +16,18 @@ Width subtyping that forgets unrelated fields is distinct. Depth widening of wri
 
 `readonly` is shallow and compile-time-only. Another alias may mutate the backing object; it is not ownership, deep immutability, or runtime freeze.
 
+## Readonly Capability Ladder
+
+Use `const` for a stable binding, `readonly field` for property reassignment control, `readonly T[]` or a readonly tuple for array-slot control, and `ReadonlyMap`/`ReadonlySet` for query-only collection views. These are the same runtime values with reduced static mutation capability. Array elements, map values, set elements, and nested referents retain their own mutability; another alias may mutate the same storage.
+
+For immutable-by-contract DTOs, config snapshots, protocol/event payload data, and published AST snapshots, prefer explicit readonly fields after construction. Do not apply the rule mechanically to builders, accumulators, caches, stateful classes, framework objects, generated types, or transforms whose contract includes mutation.
+
+Construction may initialize readonly fields normally. Use explicit fields when property-level visibility helps review, or a shallow `Readonly<{ ... }>` when every top-level field shares the policy and the wrapper reduces noise. Prefer local mutable construction followed by a readonly return over duplicate mutable/readonly shapes; introduce a draft or builder only for a real multi-stage lifecycle. `Readonly<T>` does not make nested collections readonly, sever aliases, or prevent a class method from mutating internal state.
+
+Do not default arbitrary parameters to a recursive `ReadonlyDeep`. Use a pinned and tested deep-readonly implementation only for owned or deliberately published immutable data trees, with consumer tests for maps, sets, tuples, arrays, functions, classes, schemas, and third-party types. Runtime immutability requires a separately established ownership/copy/freeze or persistent-data contract.
+
+`prefer-readonly-parameter-types` recursively evaluates nested values and can recreate deep-readonly contagion. Make it an opt-in error for deliberately immutable modules with measured allowlists, not a blanket production gate. `no-param-reassign` with `props:true` catches direct assignment/delete/update but not `array.push()`, other mutating methods, escaping aliases, or indirect effects. Combine narrow lint with explicit types and human alias review.
+
 ## Functions And Methods
 
 `strictFunctionTypes` tightens ordinary function types, while method/constructor declaration origins retain historical bivariance. Assignable boundaries use function properties:
